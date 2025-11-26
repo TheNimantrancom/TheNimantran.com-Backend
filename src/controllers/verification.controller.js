@@ -3,7 +3,7 @@ import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import bcrypt from "bcrypt";
 import { sendEmail } from "../utils/sendMail.js";
-import { redisClient } from "./redisClient.js"; // <-- New clean redis client file
+import { redisClient } from "../middlewares/otp.middleware.js";
 
 // Generate 6-digit OTP
 export const generateOTP = () =>
