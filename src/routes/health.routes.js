@@ -15,7 +15,7 @@ router.get("/health", async (req, res) => {
     mongo: "unknown",
     redis: "unknown",
   };
-
+ 
   try {
 
     health.mongo = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
