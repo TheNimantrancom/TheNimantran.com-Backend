@@ -7,19 +7,19 @@ import allRouter from "./routes/index.js";
 const app = express();
 
 
-
+const {URL1,URL2} = process.env
 
 const corsOptions = {
-  origin: ["http://localhost:3001","https://newlive5.onrender.com"],
+  origin: [URL1,URL2],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
-
+app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.json({ limit: "16mb" }));
+app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 
 app.use(express.static("public"));
 
