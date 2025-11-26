@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { verifyOtp } from "./verification.controller.js";
 import { options } from "../middlewares/auth.middleware.js";
 import WholesalerApplication from "../models/wholesaler.model.js";
+
 /**
  * Utility to generate and save access & refresh tokens
  * 
