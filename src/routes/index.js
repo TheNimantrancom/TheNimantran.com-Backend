@@ -2,10 +2,11 @@ import { Router } from "express";
 import adminRoutes from "./admin.routes.js";
 import normalRoutes from "./user.routes.js";
 import wholesalerRoutes from "./wholesaler.routes.js"
+import healthRoutes from "./health.routes.js"
 const router = Router();
 
-// Mount routers with base paths
 router.use("/admin", adminRoutes);
 router.use("/user", normalRoutes);
 router.use("/wholesaler",wholesalerRoutes)
+router.use("/check",healthRoutes)
 export default router;
