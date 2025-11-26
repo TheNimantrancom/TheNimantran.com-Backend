@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 import {Router} from "express"
-import { redisClient } from "../middlewares/otp.middleware";
+import { redisClient } from "../middlewares/otp.middleware.js";
 
 
 
