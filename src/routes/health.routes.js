@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
-
-import {Router} from "express"
+import { Router } from "express";
 import { redisClient } from "../middlewares/otp.middleware.js";
-
-
-
 
 const router = Router();
 
@@ -16,13 +12,13 @@ router.get("/health", async (req, res) => {
     mongo: "unknown",
     redis: "unknown",
   };
- 
-  try {
 
+  try {
     health.mongo = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
 
+   
     if (redisClient) {
-      await redis.ping();
+      await redisClient.ping();
       health.redis = "connected";
     }
 
