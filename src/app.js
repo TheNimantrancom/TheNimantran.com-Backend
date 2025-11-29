@@ -10,7 +10,7 @@ const app = express();
 const {FRONT1,FRONT2} = process.env
 
 const corsOptions = {
-  origin: [FRONT1,FRONT2],
+  origin: ["http://localhost:3002",FRONT2],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
