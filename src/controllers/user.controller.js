@@ -55,14 +55,16 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const isExistingUser = await User.findOne({
     $or: [{ email }, { phone }],
-  });
+  }).lean();
   if (isExistingUser) {
     throw new ApiError(409, "User with this email or phone already exists");
   }
 
   const user = await User.create({ name, email, password, phone });
 
-  const userSafe = await User.findById(user._id).select("-password -refreshToken");
+  // const userSafe = await User.findById(user._id).select("-password -refreshToken");
+      const {refreshToken:_refreshToken,password:_password,...userSafe}= user;
+
 
   return res
     .status(201)
@@ -80,7 +82,7 @@ const loginUser = asyncHandler(async (req, res) => {
   if (otp) {
     if (!email) throw new ApiError(400, "Email is required for OTP verification");
 
-    user = await User.findOne({ email });
+    user = await User.findOne({ email }).lean();
     if (!user) throw new ApiError(404, "User not found");
 
   console.log(`otp :${otp} and type : ${typeof otp}`)
@@ -109,7 +111,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const { refreshToken, accessToken } = await generateAccessAndRefreshToken(user._id);
-  const userSafe = await User.findById(user._id).select("-password -refreshToken");
+    const {refreshToken:_refreshToken,password:_password,...userSafe}= user;
   console.log("I have been hitted stage 2")
   return res
     .status(200)

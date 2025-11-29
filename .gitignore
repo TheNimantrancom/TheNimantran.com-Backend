@@ -1,3 +1,5 @@
 node_modules/
 .env
 NimantranFrontend/
+./privatekeycdn.pem
+privatekeycdn.pem

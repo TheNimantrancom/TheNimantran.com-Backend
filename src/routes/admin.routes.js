@@ -32,6 +32,7 @@ import isAdmin from "../middlewares/authAdmin.middleware.js";
 import { loginUser } from "../controllers/user.controller.js";
 import {  reviewWholesaler, getWholesalerApplications, getAllUsers } from "../controllers/admin/user.controller.js";
 import { addEvent, deleteEvent, getAllEvents } from "../controllers/admin/event.controller.js";
+import { getPresignedUploadUrl } from "../controllers/upload.controllers.js";
 
 const router = Router();
 
@@ -54,18 +55,11 @@ router.get("/getUsers",getAllUsers)
 /* --- Cards --- */
 router.post(
   "/createCard",
-  upload.fields([
-    { name: "primaryImage", maxCount: 1 },
-    { name: "secondaryImage", maxCount: 1 }
-  ]),
   createCard
 );
 router.put(
   "/updateCard/:id",
-  upload.fields([
-    { name: "primaryImage", maxCount: 1 },
-    { name: "secondaryImage", maxCount: 1 }
-  ]),
+
   updateCard
 );
 
@@ -89,6 +83,7 @@ router.get("/getOrder/:id", getOrderById);
 router.put("/addTrackingInfo/:id", addTrackingInfo);
 router.put("/updateOrderStatus/:id", updateOrderStatus);
 router.put("/updatePaymentStatus/:id", updatePaymentStatus);
+router.post("/getSignedUrlUpload",getPresignedUploadUrl)
 
 
 

@@ -3,58 +3,74 @@
 import ApiError from "../../utils/apiError.js";
 import ApiResponse from "../../utils/apiResponse.js";
 import asyncHandler from "../../utils/asyncHandler.js";
-import { deleteFromCloudinary, uploadOnCloudinary } from "../../utils/cloudinary.js";
 import { Card } from "../../models/card.model.js";
+import { deleteFromS3, generateSignedUrl } from "../../utils/awsS3.js";
+import { refreshSignedUrlsIfNeeded } from "../../utils/signedUrlCache.js";
 
 /**
- * Create a new card
+ * Create a new card  (Pure S3 + CloudFront)
  */
 export const createCard = asyncHandler(async (req, res) => {
-  console.log("I have been hitted")
-  if (!req.files?.primaryImage?.[0] || !req.files?.secondaryImage?.[0]) {
-    throw new ApiError(400, "Both primary and secondary images are required");
-  }
-console.log("Files:", req.files);
-console.log("Body:", req.body);
+  console.log("Create card hit");
+  console.log("Body:", req.body);
 
-  const primaryImageLocalPath = req.files.primaryImage[0].path;
-  const secondaryImageLocalPath = req.files.secondaryImage[0].path;
-
-  // console.log("Admin adding card", req.body);
-
-  
-  const primaryImage = await uploadOnCloudinary(primaryImageLocalPath);
-  const secondaryImage = await uploadOnCloudinary(secondaryImageLocalPath);
-
-  if (!primaryImage?.secure_url || !secondaryImage?.secure_url) {
-    throw new ApiError(500, "Image upload to Cloudinary failed");
-  }
-
- 
-  const specifications = {
-    material: req.body?.specifications?.material || "",
-    dimensions: req.body?.specifications?.dimensions || "",
-    printing: req.body?.specifications?.printing || "",
-    weight: req.body?.specifications?.weight || "",
-    color: req.body?.specifications?.color || "",
-    customizable: req.body?.specifications?.customizable === "true" || false,
-  };
-
-  // Convert other booleans
-  const isPopular = req.body.isPopular === "true" || false;
-  const isTrending = req.body.isTrending === "true" || false;
-
-  // Create card
-  const card = await Card.create({
-    ...req.body,
+  const {
+    name,
+    category,
+    price,
+    quantityAvailable,
+    specifications,
     isPopular,
     isTrending,
-    specifications,
+    primaryImageKey,
+    secondaryImageKey,
+    discount,
+    wholesalePrice,
+    isAvailableForWholesale,
+    description,
+  } = req.body;
+
+  if (!primaryImageKey || !secondaryImageKey) {
+    throw new ApiError(400, "Primary and Secondary image keys are required");
+  }
+
+  if (!name || !category || price === undefined || quantityAvailable === undefined) {
+    throw new ApiError(400, "Required fields missing: name, category, price, quantityAvailable");
+  }
+
+  // Generate CloudFront signed URLs
+  const primaryImageUrl = generateSignedUrl(primaryImageKey);
+  const secondaryImageUrl = generateSignedUrl(secondaryImageKey);
+
+  // Specifications formatting
+  const formattedSpecs = {
+    material: specifications?.material || "",
+    dimensions: specifications?.dimensions || "",
+    printing: specifications?.printing || "",
+    weight: specifications?.weight || "",
+    color: specifications?.color || "",
+    customizable: specifications?.customizable === "true" || specifications?.customizable === true,
+  };
+
+  const card = await Card.create({
+    name,
+    category: category.toLowerCase(),
+    price: Number(price),
+    quantityAvailable: Number(quantityAvailable),
+    discount: discount ? Number(discount) : 0,
+    wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 0,
+    isAvailableForWholesale: isAvailableForWholesale === "true" || isAvailableForWholesale === true,
+    description: description || "",
+    isPopular: isPopular === "true" || isPopular === true,
+    isTrending: isTrending === "true" || isTrending === true,
+    specifications: formattedSpecs,
     images: {
-      primaryImage: primaryImage.secure_url,
-      primaryImageId:primaryImage.public_id,
-      secondaryImage: secondaryImage.secure_url,
-      secondaryImageId:secondaryImage.public_id
+      primaryImage: primaryImageUrl,
+      primaryImageKey,
+      primaryUrlExpiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // cache for 12 hours
+      secondaryImage: secondaryImageUrl,
+      secondaryImageKey,
+      secondaryUrlExpiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
     },
   });
 
@@ -62,254 +78,253 @@ console.log("Body:", req.body);
 });
 
 /**
- * Update a card by ID
+ * Update a card (Pure S3 + CloudFront)
  */
-
-
-
-
 export const updateCard = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
-  // Validate card ID
+  console.log("Update card:", id);
+
   if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-    throw new ApiError(400, "Invalid card ID format");
+    throw new ApiError(400, "Invalid card ID");
   }
 
-  // Destructure and validate required fields
+  const card = await Card.findById(id);
+  if (!card) throw new ApiError(404, "Card not found");
+
   const {
     name,
     category,
     price,
+    quantityAvailable,
     discount,
     wholesalePrice,
-    quantityAvailable,
     rating,
     description,
     reviewsCount,
     isAvailableForWholesale,
     isPopular,
     isTrending,
-    specifications = {}
+    specifications,
+    primaryImageKey,
+    secondaryImageKey,
   } = req.body;
 
+  // Basic required field validation (you can relax this if partial updates allowed)
   if (!name || !category || price === undefined || quantityAvailable === undefined) {
-    throw new ApiError(400, "Required fields are missing");
-  }
-
-  // Find the existing card
-  const card = await Card.findById(id);
-  if (!card) {
-    throw new ApiError(404, "Card not found");
+    throw new ApiError(400, "Required fields missing: name, category, price, quantityAvailable");
   }
 
   // Prepare update data
   const updateData = {
     name,
-    category,
-    price: parseFloat(price),
-    discount: parseFloat(discount) || 0,
-    wholesalePrice: parseFloat(wholesalePrice) || 0,
-    quantityAvailable: parseInt(quantityAvailable),
-    rating: parseFloat(rating) || 0,
-    description,
-    reviewsCount: parseInt(reviewsCount) || 0,
-    isAvailableForWholesale: isAvailableForWholesale === "true",
-    isPopular: isPopular === "true",
-    isTrending: isTrending === "true",
+    category: category.toLowerCase(),
+    price: Number(price),
+    quantityAvailable: Number(quantityAvailable),
+    discount: discount ? Number(discount) : 0,
+    wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 0,
+    rating: rating !== undefined ? Number(rating) : card.rating,
+    description: description ?? card.description,
+    reviewsCount: reviewsCount !== undefined ? Number(reviewsCount) : card.reviewsCount,
+    isAvailableForWholesale: isAvailableForWholesale === "true" || isAvailableForWholesale === true,
+    isPopular: isPopular === "true" || isPopular === true,
+    isTrending: isTrending === "true" || isTrending === true,
     specifications: {
-      ...card.specifications, // Keep existing specifications
-      ...specifications      // Merge with new specifications
-    }
+      ...card.specifications,
+      ...specifications,
+    },
   };
 
-  // Handle image uploads and deletions
-  try {
-    // Primary Image Handling
-    if (req.files?.primaryImage?.[0]?.path) {
-      // Delete old image if exists
-      if (card.images?.primaryImage) {
-        await deleteFromCloudinary(card.images.primaryImageId);
+  // Prepare images object starting from existing
+  const imagesUpdate = {
+    ...card.images,
+  };
+
+  // Primary Image Update (if provided)
+  if (primaryImageKey) {
+    // delete old object if exists
+    if (card.images?.primaryImageKey) {
+      try {
+        await deleteFromS3(card.images.primaryImageKey);
+      } catch (err) {
+        console.warn("Warning: failed to delete old primary image from S3", err);
       }
-      
-      const primaryImage = await uploadOnCloudinary(req.files.primaryImage[0].path);
-      if (!primaryImage?.secure_url) {
-        throw new ApiError(500, "Failed to upload primary image");
-      }
-      updateData["images.primaryImage"] = primaryImage.secure_url;
     }
 
-    // Secondary Image Handling
-    if (req.files?.secondaryImage?.[0]?.path) {
-      // Delete old image if exists
-      if (card.images?.secondaryImage) {
-        await deleteFromCloudinary(card.images.secondaryImageId);
-      }
-      
-      const secondaryImage = await uploadOnCloudinary(req.files.secondaryImage[0].path);
-      if (!secondaryImage?.secure_url) {
-        throw new ApiError(500, "Failed to upload secondary image");
-      }
-      updateData["images.secondaryImage"] = secondaryImage.secure_url;
-    }
-
-    // Perform the update
-    const updatedCard = await Card.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { 
-        new: true, 
-        runValidators: true,
-        context: 'query' // Ensures validators run with the update operation
-      }
-    ).select("-__v"); // Exclude version key
-
-    if (!updatedCard) {
-      throw new ApiError(500, "Failed to update card");
-    }
-
-    res.status(200).json(
-      new ApiResponse(200, updatedCard, "Card updated successfully")
-    );
-
-  } catch (error) {
-    if (updateData["images.primaryImage"]) {
-      await deleteFromCloudinary(updateData["images.primaryImageId"]);
-    }
-    if (updateData["images.secondaryImage"]) {
-      await deleteFromCloudinary(updateData["images.secondaryImageId"]);
-    }
-    throw error;
+    imagesUpdate.primaryImageKey = primaryImageKey;
+    imagesUpdate.primaryImage = generateSignedUrl(primaryImageKey);
+    imagesUpdate.primaryUrlExpiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
   }
+
+  // Secondary Image Update (if provided)
+  if (secondaryImageKey) {
+    if (card.images?.secondaryImageKey) {
+      try {
+        await deleteFromS3(card.images.secondaryImageKey);
+      } catch (err) {
+        console.warn("Warning: failed to delete old secondary image from S3", err);
+      }
+    }
+
+    imagesUpdate.secondaryImageKey = secondaryImageKey;
+    imagesUpdate.secondaryImage = generateSignedUrl(secondaryImageKey);
+    imagesUpdate.secondaryUrlExpiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+  }
+
+  // Attach images update to updateData if changed
+  updateData.images = imagesUpdate;
+
+  const updatedCard = await Card.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!updatedCard) throw new ApiError(500, "Failed to update card");
+
+  res.status(200).json(new ApiResponse(200, updatedCard, "Card updated successfully"));
 });
 
-
-
-
-
 /**
- * Get a single card by ID
+ * Get a single card
  */
 export const getCardById = asyncHandler(async (req, res) => {
   const card = await Card.findById(req.params.id);
 
-  if (!card) {
-    throw new ApiError(404, "Card not found");
-  }
+  if (!card) throw new ApiError(404, "Card not found");
+
+  // Refresh signed URLs if expired
+  const updated = refreshSignedUrlsIfNeeded(card);
+  if (updated) await card.save();
 
   res.status(200).json(new ApiResponse(200, card, "Card fetched successfully"));
 });
 
 /**
- * Delete a card by ID
+ * Delete card + delete files from S3
  */
 export const deleteCard = asyncHandler(async (req, res) => {
-
-
   const card = await Card.findByIdAndDelete(req.params.id);
-     await deleteFromCloudinary(card.images.primaryImageId)
-     await deleteFromCloudinary(card.images.secondaryImageId)
 
-  if (!card) {
-    throw new ApiError(404, "Card not found");
+  if (!card) throw new ApiError(404, "Card not found");
+
+  // Delete linked S3 files (best-effort)
+  try {
+    if (card.images?.primaryImageKey) await deleteFromS3(card.images.primaryImageKey);
+  } catch (err) {
+    console.warn("Failed to delete primary image from S3:", err);
   }
 
-  res
-    .status(200)
-    .json(new ApiResponse(200, null, "Card deleted successfully"));
+  try {
+    if (card.images?.secondaryImageKey) await deleteFromS3(card.images.secondaryImageKey);
+  } catch (err) {
+    console.warn("Failed to delete secondary image from S3:", err);
+  }
+
+  res.status(200).json(new ApiResponse(200, null, "Card deleted successfully"));
 });
 
 /**
- * Get popular cards
+ * Popular cards
  */
 export const getPopularCards = asyncHandler(async (req, res) => {
   const cards = await Card.find({ isPopular: true })
-    .limit(10)
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(10);
 
-  res
-    .status(200)
-    .json(new ApiResponse(200, cards, "Popular cards fetched successfully"));
+  // Refresh signed URLs if needed and persist
+  let updated = false;
+  for (const c of cards) {
+    if (refreshSignedUrlsIfNeeded(c)) {
+      updated = true;
+    }
+  }
+  if (updated) await Promise.all(cards.map((c) => c.save()));
+
+  res.status(200).json(new ApiResponse(200, cards, "Popular cards fetched successfully"));
 });
 
 /**
- * Get trending cards
+ * Trending cards
  */
 export const getTrendingCards = asyncHandler(async (req, res) => {
   const cards = await Card.find({ isTrending: true })
-    .limit(10)
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(10);
 
-  res
-    .status(200)
-    .json(new ApiResponse(200, cards, "Trending cards fetched successfully"));
+  // Refresh signed URLs if needed and persist
+  let updated = false;
+  for (const c of cards) {
+    if (refreshSignedUrlsIfNeeded(c)) updated = true;
+  }
+  if (updated) await Promise.all(cards.map((c) => c.save()));
+
+  res.status(200).json(new ApiResponse(200, cards, "Trending cards fetched successfully"));
 });
-// Get all products with optional filtering, sorting, pagination
+
+/**
+ * Get all cards with filtering, sorting, pagination
+ */
 export const getAllCards = asyncHandler(async (req, res) => {
   let query = {};
-    console.log("I have been hitted")
-  // Filtering by category, price range, popularity etc.
-  if (req.query.category) {
-    query.category = req.query.category.toLowerCase();
-  }
+
+  if (req.query.category) query.category = req.query.category.toLowerCase();
+
   if (req.query.minPrice || req.query.maxPrice) {
     query.price = {};
     if (req.query.minPrice) query.price.$gte = Number(req.query.minPrice);
     if (req.query.maxPrice) query.price.$lte = Number(req.query.maxPrice);
   }
-  if (req.query.isPopular) {
-    query.isPopular = req.query.isPopular === "true";
-  }
-  if (req.query.isTrending) {
-    query.isTrending = req.query.isTrending === "true";
-  }
+
+  if (req.query.isPopular) query.isPopular = req.query.isPopular === "true";
+  if (req.query.isTrending) query.isTrending = req.query.isTrending === "true";
 
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 20;
   const skip = (page - 1) * limit;
- 
-  // Sorting: e.g. price, rating, createdAt
+
   let sort = {};
   if (req.query.sortBy) {
-    const parts = req.query.sortBy.split(":"); // e.g. "price:desc"
+    const parts = req.query.sortBy.split(":");
     sort[parts[0]] = parts[1] === "desc" ? -1 : 1;
-  } else {
-    sort.createdAt = -1; // default newest first
-  }
+  } else sort.createdAt = -1;
 
-  const products = await Card.find(query)
-    .skip(skip)
-    .limit(limit)
-    .sort(sort);
-
+  const cards = await Card.find(query).skip(skip).limit(limit).sort(sort);
   const total = await Card.countDocuments(query);
 
-  res.json({
+  // Refresh signed URLs if needed and persist
+  let updated = false;
+  for (const c of cards) {
+    if (refreshSignedUrlsIfNeeded(c)) updated = true;
+  }
+  if (updated) await Promise.all(cards.map((c) => c.save()));
+
+  res.status(200).json({
     success: true,
-    count: products.length,
+    count: cards.length,
     total,
     page,
     pages: Math.ceil(total / limit),
-    data: products,
+    data: cards,
   });
 });
 
-
-
-
+/**
+ * Update card rating
+ */
 export const updateCardRating = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { rating, reviewsCount } = req.body;
 
-  const product = await Product.findById(id);
-  if (!product) {
-    throw new ApiError(404, "Product not found");
+  if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    throw new ApiError(400, "Invalid id");
   }
 
-  if (rating !== undefined) product.rating = rating;
-  if (reviewsCount !== undefined) product.reviewsCount = reviewsCount;
+  const card = await Card.findById(id);
+  if (!card) throw new ApiError(404, "Card not found");
 
-  await product.save();
+  if (rating !== undefined) card.rating = Number(rating);
+  if (reviewsCount !== undefined) card.reviewsCount = Number(reviewsCount);
 
-  res.json({ success: true, data: product });
+  await card.save();
+
+  res.status(200).json(new ApiResponse(200, card, "Card rating updated"));
 });
