@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getCurrentUser,
+  googleCallbackLogin,
   loginUser,
   logoutUser,
   refreshAccessToken,
@@ -35,6 +36,7 @@ import {
 import { getAllCards, getCardById } from "../controllers/card.controller.js";
 import { addAddress, getAllAddresses } from "../controllers/address.controller.js";
 import { getAllEvents } from "../controllers/admin/event.controller.js";
+import passport from "passport";
 
 const router = Router();
 
@@ -50,10 +52,18 @@ router.put("/auth/updateProfile", verifyJWT, updateProfile);
 router.post("/auth/checkOtp", checkOtp);
 router.get("/auth/sendOtp", verifyJWT, sendOTP);
 router.post("/token/refreshAccessToken", refreshAccessToken);
+router.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"],session:false })
+);
 
-/* ========================
-   CART ROUTES
-======================== */
+router.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "https://thenimantran.com/login" ,session:false}),
+  googleCallbackLogin
+);
+
+
 router.post("/cart/addToCart", verifyJWT, addToCart);
 router.get("/cart/getCartCards", verifyJWT,getCartCards);
 router.delete("/cart/removeCartCard/:cardId", verifyJWT,removeCartCard);

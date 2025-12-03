@@ -5,7 +5,12 @@ import mongoosePaginate from "mongoose-paginate-v2";
 const ROLES = ["user", "admin", "retailer", "franchise"];
 
 const userSchema = new mongoose.Schema(
-  {
+  { 
+    googleId: {
+  type: String,
+  index: true,
+},
+
     name: {
       type: String,
       required: true,
@@ -23,24 +28,16 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
       trim: true,
       select: false, 
     },
     phone: {
-      type: String,
-      required: true,
-      trim: true,
-      unique: true,
-      index: true,
-      validate: {
-        validator: function (v) {
-          return /^[6-9]\d{9}$/.test(v); 
-        },
-        message: (props) =>
-          `${props.value} is not a valid phone number.`,
-      },
-    },
+  type: String,
+  required: false,
+  trim: true,
+  unique: true,
+  sparse: true
+},
     roles: {
       type: [String],
       default: ["user"],

@@ -119,10 +119,25 @@ const loginUser = asyncHandler(async (req, res) => {
     .cookie("accessToken", accessToken, options)
     .json(new ApiResponse(200, userSafe, "Login successful"));
 });
+export const googleCallbackLogin = asyncHandler(async(req, res) => {
+    let user = await User.findOne({ email: req.user.email });
 
-/**
- * LOGOUT USER
- */
+  if (!user) {
+    user = await User.create({
+      googleId: req.user.googleId,
+      name: req.user.name,
+      email: req.user.email,
+      picture: req.user.picture,
+      roles: ["user"],
+      wholesalerStatus: "none"
+    });
+  }
+    const { refreshToken, accessToken } = await generateAccessAndRefreshToken(user._id);
+
+  res.cookie("accessToken",accessToken,options).cookie("refreshToken",refreshToken,options)
+  res.redirect(`http://localhost:3002/dashboard/user`);
+});
+
 const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   await User.findByIdAndUpdate(userId, { refreshToken: undefined });
@@ -134,9 +149,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
-/**
- * UPDATE PROFILE
- */
+
 const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   const { name, email, otp, phone } = req.body;
