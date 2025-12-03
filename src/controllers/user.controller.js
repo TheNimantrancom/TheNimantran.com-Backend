@@ -105,7 +105,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
     user = await User.findOne(query).select("+password");
     if (!user) throw new ApiError(404, "User not found");
-
+  if(!user.password)
+  {
+   throw new ApiError(400,"Try Login with Google")
+  }
     const isPasswordCorrect = await user.isPasswordCorrect(password);
     if (!isPasswordCorrect) throw new ApiError(401, "Incorrect password");
   }
