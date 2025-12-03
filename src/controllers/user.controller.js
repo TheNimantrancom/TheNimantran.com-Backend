@@ -135,7 +135,7 @@ export const googleCallbackLogin = asyncHandler(async(req, res) => {
     const { refreshToken, accessToken } = await generateAccessAndRefreshToken(user._id);
 
   res.cookie("accessToken",accessToken,options).cookie("refreshToken",refreshToken,options)
-  res.redirect(`http://localhost:3002/dashboard/user`);
+  res.redirect(`https://thenimantran.com/`);
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
