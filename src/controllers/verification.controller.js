@@ -115,6 +115,11 @@ const checkOtp = asyncHandler(async (req, res) => {
   }
 
   const isCorrect = await verifyOtp(email, otp,purpose);
+   
+  if(!isCorrect)
+  {
+    throw new ApiError(400,"Otp Incorrect")
+  }
 
   if(purpose==="register")
   { 
