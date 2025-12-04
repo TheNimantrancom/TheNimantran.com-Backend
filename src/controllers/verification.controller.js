@@ -4,7 +4,7 @@ import ApiResponse from "../utils/apiResponse.js";
 import bcrypt from "bcrypt";
 import { sendEmail } from "../utils/sendMail.js";
 import { redisClient } from "../middlewares/otp.middleware.js";
-import User from "../models/user.model.js";
+import { User }from "../models/user.model.js";
 
 // Generate 6-digit OTP
 export const generateOTP = () =>
