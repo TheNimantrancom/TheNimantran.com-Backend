@@ -1,3 +1,10 @@
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
+import ApiResponse from "../utils/apiResponse.js";
+import bcrypt from "bcrypt";
+import { sendEmail } from "../utils/sendMail.js";
+import { redisClient } from "../middlewares/otp.middleware.js";
+import { User }from "../models/user.model.js";
 // utils
 export const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
