@@ -44,7 +44,7 @@ export const getAllAddresses = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   const addressDoc = await Address.findOne({ userId });
-  if (!addressDoc || addressDoc.addresses.length === 0) {
+  if (!addressDoc) {
     throw new ApiError(404, "No addresses found for this user");
   }
 
