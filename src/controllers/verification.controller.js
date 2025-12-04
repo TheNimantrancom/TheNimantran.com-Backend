@@ -32,6 +32,11 @@ const sendOTP = asyncHandler(async (req, res) => {
   const RESEND_LIMIT = 60;   // 1 minute cooldown
 
   const email = req.body?.email || req.user?.email;
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+  if (!user) {
+    throw new ApiError(404, "User with this email does not exist");
+  }
 
   if (!email) throw new ApiError(400, "Email is required");
 
