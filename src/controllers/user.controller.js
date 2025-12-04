@@ -257,6 +257,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     );
 });
 
+
 /**
  * REFRESH ACCESS TOKEN
  */
