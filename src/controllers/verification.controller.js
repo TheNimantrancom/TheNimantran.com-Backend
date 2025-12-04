@@ -41,7 +41,7 @@ const sendOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid OTP purpose");
   }
 
-  const email = req.body?.email || req.user?.email;
+  const email = req.body?.email || req.params?.email || req.user?.email;
   if (!email) throw new ApiError(400, "Email is required");
 
   const cleanEmail = email.toLowerCase().trim();
