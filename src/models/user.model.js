@@ -2,14 +2,15 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoosePaginate from "mongoose-paginate-v2";
+
 const ROLES = ["user", "admin", "retailer", "franchise"];
 
 const userSchema = new mongoose.Schema(
-  { 
+  {
     googleId: {
-  type: String,
-  index: true,
-},
+      type: String,
+      index: true,
+    },
 
     name: {
       type: String,
@@ -17,6 +18,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+
     email: {
       type: String,
       required: true,
@@ -26,34 +28,46 @@ const userSchema = new mongoose.Schema(
       index: true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
     },
+
     password: {
       type: String,
       trim: true,
-      select: false, 
+      select: false, // never return password by default
     },
+
     phone: {
-  type: String,
-  required: false,
-  trim: true,
-  unique: true,
-  sparse: true
-},
+      type: String,
+      required: false,
+      trim: true,
+      // unique: true,
+      sparse: true,
+    },
+
     roles: {
       type: [String],
       default: ["user"],
       enum: ROLES,
     },
-wholesalerStatus: {
-  type: String,
-  enum: ["none", "pending", "approved", "declined"],
-  default: "none"
-},
+
+    wholesalerStatus: {
+      type: String,
+      enum: ["none", "pending", "approved", "declined"],
+      default: "none",
+    },
+
     isBanned: {
       type: Boolean,
       default: false,
     },
+
+    isVerified: {
+      type: Boolean,
+      default: false, // flip to true once email/otp verified
+    },
+
     refreshToken: {
       type: String,
+      select: false, // do not expose in queries by default
     },
   },
   {
@@ -91,14 +105,24 @@ userSchema.methods.generateAccessToken = function () {
 
 // JWT: Refresh Token
 userSchema.methods.generateRefreshToken = function () {
-  return jwt.sign(
-    { _id: this._id },
-    process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    }
-  );
+  return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+  });
 };
+
+// Optional: global JSON transform to hide internal fields
+userSchema.set("toJSON", {
+  transform(doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.password;
+    delete ret.refreshToken;
+    delete ret.__v;
+    return ret;
+  },
+});
+
 userSchema.plugin(mongoosePaginate);
+
 export const User = mongoose.model("User", userSchema);
 export { ROLES };
