@@ -59,15 +59,24 @@ const parseBoolean = (value) => {
   return false;
 };
 
-/**
- * REGISTER USER
- */
+
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, phone } = req.body;
 
   if (!name || !email || !password || !phone) {
     throw new ApiError(400, "All fields are required");
   }
+  const registerToken = req.cookies.emailVerifiedToken;
+
+if(!registerToken)
+{
+  throw new ApiError(400,"Email not verified yet")
+}
+ const token = jwt.verify(registerToken,process.env.REGISTER_TOKEN_SECRET)
+if(!token)
+  {
+  throw new ApiError(400,"Email not verified yet")
+}
 
   if (!/^\d{10}$/.test(phone)) {
     throw new ApiError(400, "Phone number must be 10 digits");
@@ -77,19 +86,18 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid email format");
   }
 
-  const isExistingUser = await User.findOne({
-    $or: [{ email }, { phone }],
+  const isExistingUser = await User.findOne({ email
   }).lean();
 
   if (isExistingUser) {
-    throw new ApiError(409, "User with this email or phone already exists");
+    throw new ApiError(409, "Try using another email");
   }
 
-  const user = await User.create({ name, email, password, phone });
+  const user = await User.create({ name, email, password, phone,isVerified:true });
 
   const userSafe = sanitizeUser(user);
 
-  // You can decide default isVerified. Here it's false until email/OTP verify.
+
   const responseData = {
     ...userSafe,
     isVerified: userSafe?.isVerified ?? false,
@@ -102,16 +110,14 @@ const registerUser = asyncHandler(async (req, res) => {
     );
 });
 
-/**
- * LOGIN USER (password or OTP)
- */
+
 const loginUser = asyncHandler(async (req, res) => {
   console.log("I have been hitted stage 1");
   let user;
   const { otp, emailOrPhone, password, email } = req.body;
 
   if (otp) {
-    // OTP login flow
+    
     if (!email) throw new ApiError(400, "Email is required for OTP verification");
 
     user = await User.findOne({ email });
@@ -184,7 +190,7 @@ export const googleCallbackLogin = asyncHandler(async (req, res) => {
       picture: req.user.picture,
       roles: ["user"],
       wholesalerStatus: "none",
-      isVerified: true, // Google login can be treated as verified email
+      isVerified: true,
     });
   }
 
@@ -205,7 +211,6 @@ export const googleCallbackLogin = asyncHandler(async (req, res) => {
  */
 const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
-  await User.findByIdAndUpdate(userId, { refreshToken: undefined });
 
   return res
     .status(202)
@@ -409,6 +414,48 @@ export const applyWholesaler = asyncHandler(async (req, res) => {
     );
 });
 
+const resetPassword = asyncHandler(async(req,res)=>{
+
+  const otpToken = req.cookies.resetPassToken;
+   const {password} = req.body;
+
+   if(!password)
+   {
+    throw new ApiError(400,"New password is required")
+   }
+  if(!otpToken)
+  {
+    throw new ApiError(400,"Verify with otp first")
+  }
+
+  const resetPassToken = jwt.verify(otpToken,process.env.RESTPASS_TOKEN_SECRET)
+  
+  if(!resetPassToken)
+  {
+    throw new ApiError(401,"Not authorized to change password")
+  }
+
+
+  const user = await User.findOneAndUpdate({email:resetPassToken.email},{
+    $set:{
+      password
+    }
+  },{
+    new:true
+  })
+
+  if(!user)
+  {
+    throw new ApiError(400,"Unable to update password ,Try later!")
+  }
+
+
+  return res.status(200).json(
+    new ApiResponse(200,{},"Password changed successfully")
+  )
+
+})
+
 export {
   registerUser,
   loginUser,
@@ -416,4 +463,5 @@ export {
   refreshAccessToken,
   getCurrentUser,
   updateProfile,
+  resetPassword
 };

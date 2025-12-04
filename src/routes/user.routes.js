@@ -6,6 +6,7 @@ import {
   logoutUser,
   refreshAccessToken,
   registerUser,
+  resetPassword,
   updateProfile
 } from "../controllers/user.controller.js";
 
@@ -44,13 +45,14 @@ const router = Router();
    AUTH ROUTES
 ======================== */
 router.post("/auth/registerUser", registerUser);
+router.post("/auth/reset-password",resetPassword)
 router.post("/auth/loginUser", loginUser);
-router.post("/auth/getLoginOtp", sendOTP);
+router.post("/auth/getLoginOtp/:purpose", sendOTP);
 router.get("/auth/me", verifyJWT, getCurrentUser);
 router.post("/auth/logoutUser", verifyJWT, logoutUser);
 router.put("/auth/updateProfile", verifyJWT, updateProfile);
-router.post("/auth/checkOtp", checkOtp);
-router.get("/auth/sendOtp", verifyJWT, sendOTP);
+router.post("/auth/checkOtp/:purpose", checkOtp);
+router.get("/auth/sendOtp/:email/:purpose", sendOTP);
 router.post("/token/refreshAccessToken", refreshAccessToken);
 router.get(
   "/auth/google",

@@ -39,8 +39,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
       trim: true,
-      // unique: true,
-      sparse: true,
     },
 
     roles: {
@@ -62,13 +60,8 @@ const userSchema = new mongoose.Schema(
 
     isVerified: {
       type: Boolean,
-      default: false, // flip to true once email/otp verified
-    },
-
-    refreshToken: {
-      type: String,
-      select: false, // do not expose in queries by default
-    },
+      default: false, 
+    }
   },
   {
     timestamps: true,
