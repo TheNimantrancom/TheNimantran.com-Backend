@@ -125,7 +125,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     console.log(`otp :${otp} and type : ${typeof otp}`);
 
-    const otpVerified = await verifyOtp(email, otp);
+    const otpVerified = await verifyOtp(email, otp,"login");
     if (!otpVerified) throw new ApiError(400, "Invalid OTP");
   } else {
     // Password login flow
