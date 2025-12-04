@@ -10,8 +10,32 @@ import { options } from "../middlewares/auth.middleware.js";
 import WholesalerApplication from "../models/wholesaler.model.js";
 
 /**
+ * Utility: sanitize user document before sending in response
+ * Removes sensitive fields and mongoose internals.
+ */
+const sanitizeUser = (userDoc) => {
+  if (!userDoc) return null;
+
+  // If it's a Mongoose document, convert to plain object
+  const obj =
+    typeof userDoc.toObject === "function" ? userDoc.toObject() : { ...userDoc };
+
+  delete obj.password;
+  delete obj.refreshToken;
+  delete obj.__v;
+  delete obj.$__;
+  delete obj._doc;
+
+  // Normalize id if you like:
+  if (obj._id && !obj.id) {
+    obj.id = obj._id;
+  }
+
+  return obj;
+};
+
+/**
  * Utility to generate and save access & refresh tokens
- * 
  */
 const generateAccessAndRefreshToken = async (userId) => {
   const user = await User.findById(userId);
@@ -27,7 +51,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 };
 
 /**
- * Parse string/boolean to boolean
+ * Parse string/boolean to boolean (if needed later)
  */
 const parseBoolean = (value) => {
   if (typeof value === "boolean") return value;
@@ -56,40 +80,49 @@ const registerUser = asyncHandler(async (req, res) => {
   const isExistingUser = await User.findOne({
     $or: [{ email }, { phone }],
   }).lean();
+
   if (isExistingUser) {
     throw new ApiError(409, "User with this email or phone already exists");
   }
 
   const user = await User.create({ name, email, password, phone });
 
-  // const userSafe = await User.findById(user._id).select("-password -refreshToken");
-      const {refreshToken:_refreshToken,password:_password,...userSafe}= user;
+  const userSafe = sanitizeUser(user);
 
+  // You can decide default isVerified. Here it's false until email/OTP verify.
+  const responseData = {
+    ...userSafe,
+    isVerified: userSafe?.isVerified ?? false,
+  };
 
   return res
     .status(201)
-    .json(new ApiResponse(201, userSafe, "User registered successfully"));
+    .json(
+      new ApiResponse(201, responseData, "User registered successfully")
+    );
 });
 
 /**
  * LOGIN USER (password or OTP)
  */
 const loginUser = asyncHandler(async (req, res) => {
-  console.log("I have been hitted stage 1")
+  console.log("I have been hitted stage 1");
   let user;
   const { otp, emailOrPhone, password, email } = req.body;
 
   if (otp) {
+    // OTP login flow
     if (!email) throw new ApiError(400, "Email is required for OTP verification");
 
-    user = await User.findOne({ email }).lean();
+    user = await User.findOne({ email });
     if (!user) throw new ApiError(404, "User not found");
 
-  console.log(`otp :${otp} and type : ${typeof otp}`)
+    console.log(`otp :${otp} and type : ${typeof otp}`);
 
     const otpVerified = await verifyOtp(email, otp);
     if (!otpVerified) throw new ApiError(400, "Invalid OTP");
   } else {
+    // Password login flow
     if (!emailOrPhone || !password) {
       throw new ApiError(400, "Email/Phone and password are required");
     }
@@ -105,25 +138,43 @@ const loginUser = asyncHandler(async (req, res) => {
 
     user = await User.findOne(query).select("+password");
     if (!user) throw new ApiError(404, "User not found");
-  if(!user.password)
-  {
-   throw new ApiError(400,"Try Login with Google")
-  }
+
+    if (!user.password) {
+      throw new ApiError(400, "Try Login with Google");
+    }
+
     const isPasswordCorrect = await user.isPasswordCorrect(password);
     if (!isPasswordCorrect) throw new ApiError(401, "Incorrect password");
   }
 
-  const { refreshToken, accessToken } = await generateAccessAndRefreshToken(user._id);
-    const {refreshToken:_refreshToken,password:_password,...userSafe}= user;
-  console.log("I have been hitted stage 2")
+  const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  const userSafe = sanitizeUser(user);
+
+  console.log("I have been hitted stage 2");
   return res
     .status(200)
     .cookie("refreshToken", refreshToken, options)
     .cookie("accessToken", accessToken, options)
-    .json(new ApiResponse(200, userSafe, "Login successful"));
+    .json(
+      new ApiResponse(
+        200,
+        {
+          ...userSafe,
+          isVerified: userSafe?.isVerified ?? false,
+        },
+        "Login successful"
+      )
+    );
 });
-export const googleCallbackLogin = asyncHandler(async(req, res) => {
-    let user = await User.findOne({ email: req.user.email });
+
+/**
+ * GOOGLE OAUTH CALLBACK LOGIN
+ */
+export const googleCallbackLogin = asyncHandler(async (req, res) => {
+  let user = await User.findOne({ email: req.user.email });
 
   if (!user) {
     user = await User.create({
@@ -132,15 +183,26 @@ export const googleCallbackLogin = asyncHandler(async(req, res) => {
       email: req.user.email,
       picture: req.user.picture,
       roles: ["user"],
-      wholesalerStatus: "none"
+      wholesalerStatus: "none",
+      isVerified: true, // Google login can be treated as verified email
     });
   }
-    const { refreshToken, accessToken } = await generateAccessAndRefreshToken(user._id);
 
-  res.cookie("accessToken",accessToken,options).cookie("refreshToken",refreshToken,options)
+  const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  res
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options);
+
+  // Redirect to frontend (no JSON body)
   res.redirect(`https://thenimantran.com/`);
 });
 
+/**
+ * LOGOUT USER
+ */
 const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   await User.findByIdAndUpdate(userId, { refreshToken: undefined });
@@ -152,14 +214,16 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
-
+/**
+ * UPDATE PROFILE
+ */
 const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   const { name, email, otp, phone } = req.body;
 
   const updates = {};
   if (name?.trim()) updates.name = name.trim();
-  if (/^\d{10}$/.test(phone)) updates.phone = phone;
+  if (phone && /^\d{10}$/.test(phone)) updates.phone = phone;
 
   if (email && /\S+@\S+\.\S+/.test(email)) {
     const hashedOtp = await redisClient.get(`otp:data:${email}`);
@@ -169,14 +233,28 @@ const updateProfile = asyncHandler(async (req, res) => {
     if (!isVerified) throw new ApiError(400, "Email not verified by OTP");
 
     updates.email = email;
+    updates.isVerified = true;
   }
 
   const updatedUser = await User.findByIdAndUpdate(userId, updates, {
     new: true,
     runValidators: true,
-  }).select("-password -refreshToken");
+  });
 
-  return res.status(200).json(new ApiResponse(200, updatedUser, "Profile updated"));
+  const userSafe = sanitizeUser(updatedUser);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          ...userSafe,
+          isVerified: userSafe?.isVerified ?? false,
+        },
+        "Profile updated"
+      )
+    );
 });
 
 /**
@@ -193,19 +271,29 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid refresh token");
   }
 
-  const user = await User.findById(decoded._id);
+  // Need to explicitly select refreshToken because it's select:false in schema
+  const user = await User.findById(decoded._id).select("+refreshToken");
   if (!user) throw new ApiError(404, "User not found");
+
   if (user.refreshToken !== token) {
     throw new ApiError(403, "Refresh token mismatch");
   }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
 
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, { accessToken, refreshToken }, "Token refreshed"));
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken },
+        "Token refreshed"
+      )
+    );
 });
 
 /**
@@ -213,38 +301,93 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
  */
 const getCurrentUser = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
-  const user = await User.findById(userId).select("-password -refreshToken");
+  const user = await User.findById(userId);
 
-  return res.status(200).json(new ApiResponse(200, user, "User fetched successfully"));
-});
-
-
-export const applyWholesaler = async (req, res) => {
-  const userId = req.user._id;
-
-  const pendingApp = await WholesalerApplication.findOne({ user: userId, status: "pending" });
-  if (pendingApp) {
-    return res.status(400).json( new ApiResponse(200,{},"You already have pending Application")  );
+  if (!user) {
+    throw new ApiError(404, "User not found");
   }
 
-  
-  const declinedApp = await WholesalerApplication.findOne({ user: userId, status: "declined" })
-    .sort({ reviewedAt: -1 }); // get latest decline
+  const userSafe = sanitizeUser(user);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          ...userSafe,
+          isVerified: userSafe?.isVerified ?? false,
+        },
+        "User fetched successfully"
+      )
+    );
+});
+
+/**
+ * APPLY WHOLESALER
+ */
+export const applyWholesaler = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const pendingApp = await WholesalerApplication.findOne({
+    user: userId,
+    status: "pending",
+  });
+
+  if (pendingApp) {
+    return res
+      .status(400)
+      .json(
+        new ApiResponse(
+          200,
+          {},
+          "You already have pending Application"
+        )
+      );
+  }
+
+  const declinedApp = await WholesalerApplication.findOne({
+    user: userId,
+    status: "declined",
+  }).sort({ reviewedAt: -1 }); // get latest decline
+
   if (declinedApp) {
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(
+      Date.now() - 3 * 24 * 60 * 60 * 1000
+    );
     if (declinedApp.reviewedAt && declinedApp.reviewedAt > threeDaysAgo) {
-      const daysLeft = Math.ceil((declinedApp.reviewedAt.getTime() + 3*24*60*60*1000 - Date.now()) / (24*60*60*1000));
-      return res.status(400).json(     new ApiResponse(400,{},`You can reapply after ${daysLeft} day(s).`)  );
+      const daysLeft = Math.ceil(
+        (declinedApp.reviewedAt.getTime() +
+          3 * 24 * 60 * 60 * 1000 -
+          Date.now()) /
+          (24 * 60 * 60 * 1000)
+      );
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            {},
+            `You can reapply after ${daysLeft} day(s).`
+          )
+        );
     }
   }
 
-  const { businessName,email,ownerName, gstNumber, businessAddress, contactNumber } = req.body;
+  const {
+    businessName,
+    email,
+    ownerName,
+    gstNumber,
+    businessAddress,
+    contactNumber,
+  } = req.body;
 
   const application = await WholesalerApplication.create({
     user: userId,
     email,
     businessName,
-    ownerName, 
+    ownerName,
     gstNumber,
     businessAddress,
     contactNumber,
@@ -254,16 +397,16 @@ export const applyWholesaler = async (req, res) => {
   // Update user status to pending
   await User.findByIdAndUpdate(userId, { wholesalerStatus: "pending" });
 
-  res.status(201).json({ message: "Application submitted successfully.", application });
-};
-
-
-
-
-
-
-
-
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        application,
+        "Application submitted successfully."
+      )
+    );
+});
 
 export {
   registerUser,
