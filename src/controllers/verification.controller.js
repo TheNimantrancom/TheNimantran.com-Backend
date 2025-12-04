@@ -7,6 +7,7 @@ import { redisClient } from "../middlewares/otp.middleware.js";
 import { User }from "../models/user.model.js";
 // utils
 import jwt from "jsonwebtoken"
+import { options } from "../middlewares/auth.middleware.js";
 export const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
