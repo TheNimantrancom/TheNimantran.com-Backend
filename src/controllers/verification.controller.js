@@ -4,29 +4,39 @@ import ApiResponse from "../utils/apiResponse.js";
 import bcrypt from "bcrypt";
 import { sendEmail } from "../utils/sendMail.js";
 import { redisClient } from "../middlewares/otp.middleware.js";
-import { User }from "../models/user.model.js";
-// utils
-import jwt from "jsonwebtoken"
+import { User } from "../models/user.model.js";
+import jwt from "jsonwebtoken";
 import { options } from "../middlewares/auth.middleware.js";
 import Order from "../models/order.model.js";
+
 export const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-// unified redis key builder
-const otpKeyBuilder = (email, purpose) =>
-  `otp:${email}:${purpose}:data`;
+const otpKeyBuilder = (email, purpose) => `otp:${email}:${purpose}:data`;
 
 // Verify OTP
-const verifyOtp = async (email, otp, purpose) => {
+export const verifyOtp = async (email, otp, purpose) => {
   const key = otpKeyBuilder(email, purpose);
 
   const hashedOtp = await redisClient.get(key);
-  if (!hashedOtp) return false;
+  if (!hashedOtp) {
+    console.log(`OTP not found in Redis for key: ${key}`);
+    return false;
+  }
 
-  const isOtpCorrect = await bcrypt.compare(otp, hashedOtp);
+  // CRITICAL FIX: Ensure OTP is a string and trimmed
+  const cleanOtp = String(otp).trim();
+  
+  console.log(`Verifying OTP for ${email}, purpose: ${purpose}`);
+  console.log(`Clean OTP: ${cleanOtp}, Length: ${cleanOtp.length}`);
+
+  const isOtpCorrect = await bcrypt.compare(cleanOtp, hashedOtp);
 
   if (isOtpCorrect) {
     await redisClient.del(key);
+    console.log(`OTP verified and deleted for ${email}`);
+  } else {
+    console.log(`OTP verification failed for ${email}`);
   }
 
   return isOtpCorrect;
@@ -99,10 +109,12 @@ const sendOTP = asyncHandler(async (req, res) => {
   await redisClient.incr(rateKey);
   await redisClient.expire(rateKey, 3600);
 
+  console.log(`OTP generated for ${cleanEmail}: ${otp}`); // For debugging - remove in production
+
   await sendEmail(
     cleanEmail,
     `Your OTP for ${purpose.replace("-", " ")}`,
-    `Your OTP is: ${otp}`
+    `Your OTP is: ${otp}. Valid for 5 minutes.`
   );
 
   return res
@@ -115,6 +127,8 @@ const checkOtp = asyncHandler(async (req, res) => {
   const { purpose } = req.params;
   const { email, otp } = req.body;
 
+  console.log(`CheckOTP called - Purpose: ${purpose}, Email: ${email}, OTP: ${otp}`);
+
   if (!allowedPurposes.includes(purpose)) {
     throw new ApiError(400, "Invalid OTP purpose");
   }
@@ -125,9 +139,102 @@ const checkOtp = asyncHandler(async (req, res) => {
 
   const cleanEmail = email.toLowerCase().trim();
 
-  const isCorrect = await verifyOtp(cleanEmail, otp, purpose);
-  if (!isCorrect) throw new ApiError(400, "OTP is incorrect or expired");
+  // CRITICAL FIX: Clean the OTP before verification
+  const cleanOtp = String(otp).trim();
 
+  if (cleanOtp.length !== 6) {
+    throw new ApiError(400, "OTP must be 6 digits");
+  }
+
+  const isCorrect = await verifyOtp(cleanEmail, cleanOtp, purpose);
+  
+  if (!isCorrect) {
+    throw new ApiError(400, "OTP is incorrect or expired");
+  }
+
+  // Handle confirm-order purpose FIRST
+  if (purpose === "confirm-order") {
+    const { orderId } = req.query;
+
+    if (!orderId) {
+      throw new ApiError(400, "Order ID is required");
+    }
+
+    // Find the order first
+    const order = await Order.findById(orderId);
+    
+    if (!order) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    // Update order status
+    order.status = "confirmed";
+    order.paymentStatus = "pending";
+    
+    // Push to status history array (not replace)
+    if (!order.statusHistory) {
+      order.statusHistory = [];
+    }
+    
+    order.statusHistory.push({
+      status: "confirmed",
+      date: new Date(),
+      note: "Order confirmed via OTP verification"
+    });
+
+    await order.save();
+
+    // Populate user details for email
+    await order.populate("user", "name email phone wholesalerStatus");
+
+    // Send formatted email to owner
+    const emailContent = `
+      New Order Confirmed!
+      
+      Order ID: ${order._id}
+      Customer: ${order.user?.name || "N/A"}
+      Email: ${order.user?.email || "N/A"}
+      Phone: ${order.user?.phone || "N/A"}
+      Wholesaler: ${order.user?.wholesalerStatus ? "Yes" : "No"}
+      
+      Total Amount: ₹${order.finalAmount || 0}
+      Payment Method: ${order.paymentMethod || "N/A"}
+      
+      Items: ${order.items?.length || 0} item(s)
+      
+      Shipping Address:
+      ${order.shippingAddress?.address || "N/A"}
+      ${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""}
+      ${order.shippingAddress?.pincode || ""}
+      
+      View order details in admin panel.
+    `;
+
+    try {
+      await sendEmail(
+        process.env.OWNER_EMAIL,
+        `New Order Confirmed - ${order._id}`,
+        emailContent
+      );
+    } catch (emailError) {
+      console.error("Failed to send email to owner:", emailError);
+      // Don't throw error - order is already confirmed
+    }
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          orderId: order._id,
+          status: order.status,
+          paymentStatus: order.paymentStatus
+        },
+        "Order confirmed successfully"
+      )
+    );
+  }
+
+  // Handle register purpose
   if (purpose === "register") {
     const token = jwt.sign(
       { email: cleanEmail },
@@ -136,24 +243,8 @@ const checkOtp = asyncHandler(async (req, res) => {
     );
     res.cookie("emailVerifiedToken", token, options);
   }
-  if(purpose==="confirm-order")
-  { 
-     const {orderId} = req.query
 
-
-     const order = await Order.findByIdAndUpdate(orderId,{$set:{
-      status:"confirmed",
-      statusHistory:{status:"confirmed",date: new Date()}
-
-     }},
-    {
-      new:true
-    }).populate("user","name email phone wholesalerStatus")
-     sendEmail(process.env.OWNER_EMAIL,`Order Received from ${order?.user.name}`,order)
-    return res.status(200).json(
-      new ApiResponse(200,order,"Order placed Successfully")
-    )
-  }
+  // Handle reset-password purpose
   if (purpose === "reset-password") {
     const token = jwt.sign(
       { email: cleanEmail },
@@ -168,4 +259,4 @@ const checkOtp = asyncHandler(async (req, res) => {
   );
 });
 
-export { sendOTP, verifyOtp, checkOtp };
+export { sendOTP, checkOtp };
