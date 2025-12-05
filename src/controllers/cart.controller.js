@@ -172,10 +172,6 @@ const emptyCart = asyncHandler(async(req,res)=>{
   const cart = await Cart.findOneAndDelete({userId})
 
 
- if(!cart)
- {
-  throw new ApiError(400,"Something went wrong while deleting the cart")
- }
 
  return res.status(200).json(
   new ApiResponse(202,{},"Cart is empty")
