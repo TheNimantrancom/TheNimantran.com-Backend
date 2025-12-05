@@ -54,7 +54,7 @@ const allowedPurposes = [
 // SEND OTP
 const sendOTP = asyncHandler(async (req, res) => {
   const OTP_EXPIRY = 5 * 60;
-  const RATE_LIMIT = 10;
+  const RATE_LIMIT = 1000;
   const RESEND_LIMIT = 60;
 
   const { purpose } = req.params;
@@ -152,7 +152,6 @@ const checkOtp = asyncHandler(async (req, res) => {
     throw new ApiError(400, "OTP is incorrect or expired");
   }
 
-  // Handle confirm-order purpose FIRST
   if (purpose === "confirm-order") {
     const { orderId } = req.query;
 
@@ -184,10 +183,9 @@ const checkOtp = asyncHandler(async (req, res) => {
 
     await order.save();
 
-    // Populate user details for email
-    await order.populate("user", "name email phone wholesalerStatus");
-
-    // Send formatted email to owner
+    await order.populate("user", "name email wholesalerStatus");
+ 
+    console.log("Here is the order",order)
     const emailContent = `
       New Order Confirmed!
       
