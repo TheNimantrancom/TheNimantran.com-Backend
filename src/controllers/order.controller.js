@@ -120,7 +120,25 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, order, "Order cancelled successfully"));
 });
 
+export const updateOrderStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
 
+  const order = await Order.findById(id);
+
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  order.status = status;
+  order.statusHistory.push({ status, date: new Date() });
+
+  await order.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, order, "Order status updated successfully"));
+});
 
 
 

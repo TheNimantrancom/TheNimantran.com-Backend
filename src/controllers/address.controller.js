@@ -99,3 +99,37 @@ export const deleteAddress = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, null, "Address deleted successfully"));
 });
+
+
+export const addOrUpdateDefaultAddress = asyncHandler(async (req, res) => {
+  const { name, phone, alternatePhone, state, city, roadAreaColony, pincode, landmark, typeOfAddress } = req.body;
+  const userId = req.user._id;
+
+  if (!name || !phone || !state || !city || !roadAreaColony || !pincode) {
+    throw new ApiError(400, "All required address fields must be provided");
+  }
+
+
+  const newAddress = {
+    name,
+    phone,
+    alternatePhone,
+    state,
+    city,
+    roadAreaColony,
+    pincode,
+    landmark,
+    typeOfAddress
+  };
+
+  const updated = await Address.findOneAndUpdate({userId},{
+    $set:{
+      defaultAddress:newAddress
+    }
+  },{
+    new:true,
+    upsert:true
+  })
+
+  return res.status(201).json(new ApiResponse(201, updated, "Default address updated successfully"));
+});

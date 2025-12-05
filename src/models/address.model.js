@@ -66,9 +66,11 @@ const addressSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true // performance optimization
+      index: true 
     },
-    addresses: [addressInfoSchema]
+    addresses: [addressInfoSchema],
+    defaultAddress:addressInfoSchema
+
   },
   { timestamps: true }
 );

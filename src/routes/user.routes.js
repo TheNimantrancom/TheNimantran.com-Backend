@@ -35,7 +35,7 @@ import {
 } from "../controllers/order.controller.js";
 
 import { getAllCards, getCardById } from "../controllers/card.controller.js";
-import { addAddress, getAllAddresses } from "../controllers/address.controller.js";
+import { addAddress, addOrUpdateDefaultAddress, deleteAddress, getAllAddresses, updateAddress } from "../controllers/address.controller.js";
 import { getAllEvents } from "../controllers/admin/event.controller.js";
 import passport from "passport";
 
@@ -100,7 +100,9 @@ router.get("/order/getCertainOrder/:orderId",verifyJWT,getCertainOrder)
 
 router.route("/addAddress").post(verifyJWT,addAddress)
 router.route("/getAllAddresses").get(verifyJWT,getAllAddresses)
-
+router.route("/setDefaultAddress").put(verifyJWT,addOrUpdateDefaultAddress)
+router.delete("/deleteAddress/:addressId",verifyJWT,deleteAddress)
+router.put("/updateAddress/:addressId",verifyJWT,updateAddress)
 // Events 
 router.get("/events",getAllEvents)
 

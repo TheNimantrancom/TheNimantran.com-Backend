@@ -8,6 +8,7 @@ import { User }from "../models/user.model.js";
 // utils
 import jwt from "jsonwebtoken"
 import { options } from "../middlewares/auth.middleware.js";
+import Order from "../models/order.model.js";
 export const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -37,6 +38,7 @@ const allowedPurposes = [
   "reset-password",
   "change-email",
   "verify-email",
+  "confirm-order"
 ];
 
 // SEND OTP
@@ -134,7 +136,24 @@ const checkOtp = asyncHandler(async (req, res) => {
     );
     res.cookie("emailVerifiedToken", token, options);
   }
+  if(purpose==="confirm-order")
+  { 
+     const {orderId} = req.query
 
+
+     const order = await Order.findByIdAndUpdate(orderId,{$set:{
+      status:"confirmed",
+      statusHistory:{status:"confirmed",date: new Date()}
+
+     }},
+    {
+      new:true
+    }).populate("user","name email phone wholesalerStatus")
+     sendEmail(process.env.OWNER_EMAIL,`Order Received from ${order?.user.name}`,order)
+    return res.status(200).json(
+      new ApiResponse(200,order,"Order placed Successfully")
+    )
+  }
   if (purpose === "reset-password") {
     const token = jwt.sign(
       { email: cleanEmail },
