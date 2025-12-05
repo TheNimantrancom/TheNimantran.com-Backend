@@ -8,7 +8,7 @@ import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { options } from "../middlewares/auth.middleware.js";
 import Order from "../models/order.model.js";
-
+import mongoose from "mongoose"
 export const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -160,8 +160,8 @@ const checkOtp = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Order ID is required");
     }
 
-    // Find the order first
-    const order = await Order.findById(orderId);
+  
+    const order = await Order.findById(new mongoose.Types.ObjectId(orderId));
     
     if (!order) {
       throw new ApiError(404, "Order not found");
