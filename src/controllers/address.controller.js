@@ -88,17 +88,33 @@ export const deleteAddress = asyncHandler(async (req, res) => {
     throw new ApiError(404, "No addresses found for this user");
   }
 
-  const initialLength = addressDoc.addresses.length;
-  addressDoc.addresses = addressDoc.addresses.filter(addr => addr._id.toString() !== addressId);
+  const beforeDeleteLength = addressDoc.addresses.length;
 
-  if (addressDoc.addresses.length === initialLength) {
+  addressDoc.addresses = addressDoc.addresses.filter(
+    (addr) => addr._id.toString() !== addressId
+  );
+
+  addressDoc.markModified("addresses");
+
+  if (addressDoc.addresses.length === beforeDeleteLength) {
     throw new ApiError(404, "Address not found");
+  }
+
+  if (
+    addressDoc.defaultAddress &&
+    addressDoc.defaultAddress._id &&
+    addressDoc.defaultAddress._id.toString() === addressId
+  ) {
+    addressDoc.defaultAddress = null;
   }
 
   await addressDoc.save();
 
-  return res.status(200).json(new ApiResponse(200, null, "Address deleted successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Address deleted successfully"));
 });
+
 
 
 export const addOrUpdateDefaultAddress = asyncHandler(async (req, res) => {
