@@ -122,7 +122,7 @@ const sendOTP = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "OTP has been sent successfully"));
 });
 
-// CHECK OTP
+
 const checkOtp = asyncHandler(async (req, res) => {
   const { purpose } = req.params;
   const { email, otp } = req.body;
@@ -166,7 +166,7 @@ const checkOtp = asyncHandler(async (req, res) => {
       throw new ApiError(404, "Order not found");
     }
 
-    // Update order status
+  
     order.status = "confirmed";
     order.paymentStatus = "pending";
     

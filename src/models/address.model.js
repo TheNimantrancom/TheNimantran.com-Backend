@@ -57,7 +57,6 @@ const addressInfoSchema = new Schema(
       default: "home"
     }
   },
-  { _id: false } // Prevents extra IDs for sub-documents
 );
 
 const addressSchema = new Schema(
