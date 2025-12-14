@@ -30,9 +30,9 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 app.use(passport.initialize());
-app.use("/api",adminRoutes)
-app.use("/api", allRouter);
 
+app.use("/api", allRouter);
+app.use("/api",adminRoutes)
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
