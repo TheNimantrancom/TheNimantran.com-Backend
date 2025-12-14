@@ -8,10 +8,11 @@ const cardSchema = new mongoose.Schema(
       trim: true
     },
 
-     category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      required: true
+    category: {
+      type: String,
+      required: true,
+      lowercase: true,
+      enum: ["marriage", "birthday", "festival", "baby-shower", "business"]
     },
 
     price: { type: Number, required: true },
