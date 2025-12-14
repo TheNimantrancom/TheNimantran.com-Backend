@@ -78,12 +78,15 @@ export const updateCategory = asyncHandler(async (req, res) => {
     }
   }
 
-  if (parent) {
-    if (parent.toString() === id.toString()) {
+ 
+  const parentId = parent === "" ? null : parent;
+
+  if (parentId) {
+    if (parentId.toString() === id.toString()) {
       throw new ApiError(400, "Category cannot be its own parent");
     }
 
-    const parentCategory = await Category.findById(parent);
+    const parentCategory = await Category.findById(parentId);
     if (!parentCategory) {
       throw new ApiError(400, "Parent category not found");
     }
@@ -92,7 +95,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
   Object.assign(category, {
     name,
     slug,
-    parent,
+    parent: parentId, // Use the converted value
     description,
     image,
     isActive,
