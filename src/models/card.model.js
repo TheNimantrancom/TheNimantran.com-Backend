@@ -12,7 +12,7 @@ const cardSchema = new mongoose.Schema(
       type: String,
       required: true,
       lowercase: true,
-      enum: ["marriage", "birthday", "festival", "baby-shower", "business"]
+  
     },
 
     price: { type: Number, required: true },
