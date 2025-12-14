@@ -1,5 +1,3 @@
-// src/controllers/card.controller.js
-
 import ApiError from "../../utils/apiError.js";
 import ApiResponse from "../../utils/apiResponse.js";
 import asyncHandler from "../../utils/asyncHandler.js";
@@ -7,7 +5,7 @@ import { Card } from "../../models/card.model.js";
 import { deleteFromS3, generateSignedUrl } from "../../utils/awsS3.js";
 import { refreshSignedUrlsIfNeeded } from "../../utils/signedUrlCache.js";
 
-/**
+/**fcount
  * Create a new card  (Pure S3 + CloudFront)
  */
 export const createCard = asyncHandler(async (req, res) => {
@@ -241,6 +239,17 @@ export const getPopularCards = asyncHandler(async (req, res) => {
 
   res.status(200).json(new ApiResponse(200, cards, "Popular cards fetched successfully"));
 });
+
+
+
+export const countTotalCards = asyncHandler(async (req, res) => {
+  const total = await Card.countDocuments();
+
+  res.json(
+    new ApiResponse(200, { total }, "Total cards count fetched")
+  );
+});
+
 
 /**
  * Trending cards

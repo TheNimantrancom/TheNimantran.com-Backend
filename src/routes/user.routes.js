@@ -38,6 +38,7 @@ import { getAllCards, getCardById } from "../controllers/card.controller.js";
 import { addAddress, addOrUpdateDefaultAddress, deleteAddress, getAllAddresses, updateAddress } from "../controllers/address.controller.js";
 import { getAllEvents } from "../controllers/admin/event.controller.js";
 import passport from "passport";
+import { getActiveCategories } from "../controllers/category.controller.js";
 
 const router = Router();
 
@@ -105,7 +106,5 @@ router.delete("/deleteAddress/:addressId",verifyJWT,deleteAddress)
 router.put("/updateAddress/:addressId",verifyJWT,updateAddress)
 // Events 
 router.get("/events",getAllEvents)
-
-
-
+router.get("/getActiveCategories",getActiveCategories)
 export default router;

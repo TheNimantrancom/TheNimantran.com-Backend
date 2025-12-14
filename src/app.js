@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
+import adminRoutes from "./routes/admin/index.js"
 import allRouter from "./routes/index.js";
 import passport from "passport";
 import "./middlewares/passport.js"
@@ -20,7 +20,6 @@ const corsOptions = {
 app.set("trust proxy", 1);
 
 app.use(cors(corsOptions));
-// app.options("*", (req, res) => res.sendStatus(200));
 
 
 app.use(express.json({ limit: "16mb" }));
@@ -31,7 +30,7 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 app.use(passport.initialize());
-// app.use(passport.session());
+app.use("/api",adminRoutes)
 app.use("/api", allRouter);
 
 app.use((err, req, res, next) => {

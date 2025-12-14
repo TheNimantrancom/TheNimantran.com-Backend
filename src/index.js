@@ -15,9 +15,9 @@ const __dirname = path.dirname(__filename);
 connectDB()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`🚀 HTTPS Server running on http://localhost:${PORT}`);
+      console.log(` HTTPS Server running on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("❌ Failed to connect to DB:", err);
+    console.error(" Failed to connect to DB:", err);
   });

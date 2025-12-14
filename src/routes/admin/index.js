@@ -1,0 +1,24 @@
+import { verifyJWT } from "../../middlewares/auth.middleware.js";
+import isAdmin from "../../middlewares/authAdmin.middleware.js";
+import adminCategoryRoutes from "./category.routes.js"
+import userRoutes from "./user.routes.js"
+import adminCardRoutes from "./card.routes.js"
+import { Router } from "express"
+
+const router = Router();
+
+
+
+
+router.use(verifyJWT,isAdmin)
+
+
+router.use("/admin",adminCategoryRoutes)
+router.use("/admin",userRoutes);
+router.use("/admin",adminCardRoutes)
+
+
+
+
+
+export default router

@@ -8,6 +8,23 @@ import WholesalerApplication from "../../models/wholesaler.model.js"
 // get all users from db
 
 
+export const getUserCount = asyncHandler(async(req,res)=>{
+
+const total = await User.countDocuments();
+
+
+return res.status(200).json(
+  new ApiResponse(200,{total},"Users count fetched successfully")
+)
+
+
+
+
+
+
+
+})
+
 export const getAllUsers = asyncHandler(async (req, res) => {
   // Extract query parameters
   const { 

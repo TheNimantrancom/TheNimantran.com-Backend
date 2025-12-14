@@ -118,10 +118,7 @@ router.delete("/deleteReview/:id", deleteReview);
 
 
 
-// User 
-
-
-
+// Category Creation
 
 
 
