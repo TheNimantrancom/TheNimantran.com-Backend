@@ -156,6 +156,6 @@ const totalWholeSalers = await User.countDocuments({
 
 
 return res.status(200).json(
-  new ApiResponse(200,totalWholeSaler,"Total Wholesalers fetched successfully")
+  new ApiResponse(200,totalWholeSalers,"Total Wholesalers fetched successfully")
 )
 })
