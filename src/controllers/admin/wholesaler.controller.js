@@ -1,6 +1,8 @@
 // controllers/cardController.js
 import asyncHandler from "../../utils/asyncHandler.js";
 import { Card } from "../../models/card.model.js";
+import { User } from "../../models/user.model.js";
+import ApiResponse from "../../utils/apiResponse.js";
 
 // @desc    Get all cards with filtering
 // @route   GET /api/cards
@@ -144,3 +146,16 @@ export const getAllCards = asyncHandler(async (req, res) => {
     data: cards
   });
 });
+
+export const totalWholeSaler = asyncHandler(async(req,res)=>{
+
+
+const totalWholeSalers = await User.countDocuments({
+  wholesalerStatus:"approved"
+})
+
+
+return res.status(200).json(
+  new ApiResponse(200,totalWholeSaler,"Total Wholesalers fetched successfully")
+)
+})
