@@ -12,12 +12,13 @@ const cardSchema = new mongoose.Schema(
       type: String,
       required: true,
       lowercase: true,
-  
+    
     },
 
     price: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     wholesalePrice: { type: Number, default: 999 },
+    wholesaleDiscount:{type:Number,default:0},
     isAvailableForWholesale: { type: Boolean, default: false },
     quantityAvailable: { type: Number, required: true },
     rating: { type: Number, default: 0 },
@@ -25,6 +26,8 @@ const cardSchema = new mongoose.Schema(
     reviewsCount: { type: Number, default: 0 },
     isPopular: { type: Boolean, default: false },
     isTrending: { type: Boolean, default: false },
+    quantityPerBundleWholesale:{type:Number,default:1500},
+    quantityPerBundleCustomer:{type:Number,default:100},
 
     images: {
       primaryImage: String,          // cached CloudFront URL

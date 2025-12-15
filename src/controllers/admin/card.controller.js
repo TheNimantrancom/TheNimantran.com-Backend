@@ -24,7 +24,10 @@ export const createCard = asyncHandler(async (req, res) => {
     secondaryImageKey,
     discount,
     wholesalePrice,
+    wholesaleDiscount,
     isAvailableForWholesale,
+    quantityPerBundleCustomer,
+    quantityPerBundleWholesale,
     description,
   } = req.body;
 
@@ -56,12 +59,15 @@ export const createCard = asyncHandler(async (req, res) => {
     price: Number(price),
     quantityAvailable: Number(quantityAvailable),
     discount: discount ? Number(discount) : 0,
-    wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 0,
+    wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 9999,
+    wholesaleDiscount: wholesaleDiscount ?Number(wholesaleDiscount):0,
     isAvailableForWholesale: isAvailableForWholesale === "true" || isAvailableForWholesale === true,
     description: description || "",
     isPopular: isPopular === "true" || isPopular === true,
     isTrending: isTrending === "true" || isTrending === true,
     specifications: formattedSpecs,
+    quantityPerBundleCustomer,
+    quantityPerBundleWholesale,
     images: {
       primaryImage: primaryImageUrl,
       primaryImageKey,
