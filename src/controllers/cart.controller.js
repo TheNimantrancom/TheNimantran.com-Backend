@@ -47,7 +47,7 @@ const addToCart = asyncHandler(async (req, res) => {
 
 const getCartCards = asyncHandler(async (req, res) => {
   const cart = await Cart.findOne({ userId: req.user._id })
-    .populate("cards.cardId", "name price images discount isAvailableForWholesale wholesalePrice")
+    .populate("cards.cardId", "name price images discount isAvailableForWholesale wholesalePrice wholesaleDiscount quantityPerBundleCustomer quantityPerBundleWholesale")
     .lean();
 
   if (!cart || cart.cards.length === 0) {
