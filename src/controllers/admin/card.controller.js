@@ -102,6 +102,7 @@ export const updateCard = asyncHandler(async (req, res) => {
     quantityAvailable,
     discount,
     wholesalePrice,
+    wholesaleDiscount,
     rating,
     description,
     reviewsCount,
@@ -110,6 +111,8 @@ export const updateCard = asyncHandler(async (req, res) => {
     isTrending,
     specifications,
     primaryImageKey,
+       quantityPerBundleCustomer,
+    quantityPerBundleWholesale,
     secondaryImageKey,
   } = req.body;
 
@@ -128,6 +131,9 @@ export const updateCard = asyncHandler(async (req, res) => {
     wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 0,
     rating: rating !== undefined ? Number(rating) : card.rating,
     description: description ?? card.description,
+      wholesaleDiscount:wholesaleDiscount? Number(wholesaleDiscount):0,
+       quantityPerBundleCustomer:Number(quantityPerBundleCustomer),
+    quantityPerBundleWholesale:Number(quantityPerBundleWholesale),
     reviewsCount: reviewsCount !== undefined ? Number(reviewsCount) : card.reviewsCount,
     isAvailableForWholesale: isAvailableForWholesale === "true" || isAvailableForWholesale === true,
     isPopular: isPopular === "true" || isPopular === true,
