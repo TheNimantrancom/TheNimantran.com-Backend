@@ -8,13 +8,14 @@ const cardSchema = new mongoose.Schema(
       trim: true
     },
 
-    category: {
-      type: String,
-      required: true,
-      lowercase: true,
-    
-    },
-
+categories: [
+  {
+    type: String,
+    lowercase: true,
+    trim: true,
+    index: true
+  }
+],
     price: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     wholesalePrice: { type: Number, default: 999 },
@@ -50,5 +51,20 @@ const cardSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+
+cardSchema.index({
+  name: "text",
+  description: "text",
+  categories: "text",
+  "specifications.color": "text",
+  "specifications.material": "text",
+  "specifications.dimensions": "text"
+});
+
+cardSchema.index({ price: 1 });
+cardSchema.index({ categories: 1 });
+cardSchema.index({ createdAt: -1 });
+
 
 export const Card = mongoose.model("Card", cardSchema);

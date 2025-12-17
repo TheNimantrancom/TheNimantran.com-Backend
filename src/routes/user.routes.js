@@ -39,6 +39,7 @@ import { addAddress, addOrUpdateDefaultAddress, deleteAddress, getAllAddresses, 
 import { getAllEvents } from "../controllers/admin/event.controller.js";
 import passport from "passport";
 import { getActiveCategories } from "../controllers/category.controller.js";
+import { searchCards } from "../controllers/search.controller.js";
 
 const router = Router();
 
@@ -107,4 +108,5 @@ router.put("/updateAddress/:addressId",verifyJWT,updateAddress)
 // Events 
 router.get("/events",getAllEvents)
 router.get("/getActiveCategories",getActiveCategories)
+router.get("/searchCard",searchCards)
 export default router;
