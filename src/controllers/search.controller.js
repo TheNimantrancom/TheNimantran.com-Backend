@@ -66,3 +66,23 @@ export const searchCards = asyncHandler( async (req, res, next) => {
     next(error);
   }
 });
+export const searchSuggestions = asyncHandler( async (req, res) => {
+  const { q = "" } = req.query;
+
+  if (!q.trim()) {
+    return res.json({ success: true, data: [] });
+  }
+
+  const results = await Card.find(
+    { $text: { $search: q.trim() } },
+    { score: { $meta: "textScore" }, name: 1, categories: 1, "specifications.color": 1 }
+  )
+    .sort({ score: { $meta: "textScore" } })
+    .limit(6)
+    .lean();
+
+  res.json({
+    success: true,
+    data: results
+  });
+});
