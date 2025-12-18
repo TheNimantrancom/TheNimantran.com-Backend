@@ -77,7 +77,7 @@ const removeCartCard = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, updatedCart, "Item removed"));
 });
 
-export const totalCartAmount = asyncHandler(async (req, res) => {
+ const totalCartAmount = asyncHandler(async (req, res) => {
   const user = req.user;
 
   const cart = await Cart.findOne({ userId: user._id })
