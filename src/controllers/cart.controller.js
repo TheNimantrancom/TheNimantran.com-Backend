@@ -90,9 +90,15 @@ const totalCartAmount = asyncHandler(async (req, res) => {
 
   let total = 0;
   let discount = 0;
+  console.log("here is the cart",cart)
 
   for (const item of cart.cards) {
     const card = item.cardId;
+   
+    if(!card)
+    {
+      continue
+    }
 
     const isWholesale =
       user.wholesalerStatus === "approved" &&
