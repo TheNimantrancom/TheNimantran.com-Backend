@@ -92,14 +92,14 @@ const totalCartAmount = asyncHandler(async (req, res) => {
   (acc, item) => {
     const wholesaleEligible =
       user?.wholesalerStatus === "approved" &&
-      item?.quantity >= 1000 &&
+      item?.quantity >= 1 &&
       item?.cardId?.isAvailableForWholesale;
 
     if (wholesaleEligible) {
-      const packs = item.quantity / 1000;
+      const packs = item.quantity;
       return acc + packs * (item.cardId?.wholesalePrice || 0);
     } else {
-      const packs = item.quantity / 50;
+      const packs = item.quantity;
       return acc + packs * (item.cardId?.price || 0);
     }
   }, 0
@@ -112,9 +112,10 @@ const totalCartAmount = asyncHandler(async (req, res) => {
       item?.cardId?.isAvailableForWholesale;
 
     if (wholesaleEligible) {
-      return acc; 
+      const packs = item.quantity
+      return acc+packs*(item.cardId?.wholesaleDiscount || 0); 
     } else {
-      const packs = item.quantity / 50;
+      const packs = item.quantity 
       return acc + packs * (item.cardId?.discount || 0);
     }
   }, 0);
