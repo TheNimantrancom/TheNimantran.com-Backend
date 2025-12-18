@@ -12,6 +12,16 @@ eventImageUrl:{
   type:String,
   required:true
 },
+eventMediaKey:{
+  type:String,
+  lowercase:true,
+  trim:true
+},
+eventMediaType:{
+  type:String,
+  lowercase:true,
+  trim:true
+},
 link:{
   type:String
 }

@@ -2,123 +2,61 @@ import ApiError from "../../utils/apiError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import { Event } from "../../models/event.model.js";
 import ApiResponse from "../../utils/apiResponse.js";
-import { uploadOnCloudinary } from "../../utils/cloudinary.js";
+import { generateSignedUrl } from "../../utils/awsS3.js";
+import { deleteFromS3 } from "../../utils/awsS3.js";
 
 
 
 
- const addEvent = asyncHandler(async(req,res)=>{
+ const addEvent = asyncHandler(async (req, res) => {
+  const { eventName, mediaKey, mediaType,link } = req.body;
 
-  const {eventName,link} = req.body;
+  if (!eventName || !mediaKey || !mediaType) {
+    throw new ApiError(400, "Missing required fields");
+  }
 
-
-  if(!eventName || eventName.trim()==="") 
-{
-  throw new ApiError(400,"Please provide all the feild")
-}
-
-const eventImageLocalPath = req.file.path;
-
-if(!eventImageLocalPath)
-{
-  throw new ApiError(404,"Please provide the image ");
-}
-
-
-
-
-const eventImage = await uploadOnCloudinary(eventImageLocalPath)
-
-if(!eventImage?.url)
-{
-  throw new ApiError(404,"Dear User ! Something went wrong ..Try again")
-}
-
-console.log(eventImage)
-const event = await Event.create(
-  {
+  const event = await Event.create({
     eventName,
-    eventImageUrl:eventImage.url
+    eventMediaKey: mediaKey,
+    link,
+    eventMediaType: mediaType
+  });
+
+  return res.status(201).json(
+    new ApiResponse(201, event, "Event created successfully")
+  );
+});
+
+
+
+ const getAllEvents = asyncHandler(async (req, res) => {
+  const events = await Event.find({});
+
+  const formatted = events.map(e => ({
+    ...e.toObject(),
+    mediaUrl: generateSignedUrl(e.eventMediaKey)
+  }));
+
+  return res.status(200).json(
+    new ApiResponse(200, formatted, "Events fetched")
+  );
+});
+
+ const deleteEvent = asyncHandler(async (req, res) => {
+  const { eventId } = req.params;
+
+  const event = await Event.findById(eventId);
+  if (!event) {
+    throw new ApiError(404, "Event not found");
   }
-)
 
+  await deleteFromS3(event.eventMediaKey);
+  await event.deleteOne();
 
-
-if(!event)
-{
-  throw new ApiError(400,"Something went wrong")
-}
-
-
-return res.status(202).json(
-  new ApiResponse(200,event,"Event Added successfully")
-)
-
- })
- const deleteEvent = asyncHandler(async(req,res)=>{
-
-    const {eventId} = req.params;
-
-  if(!eventId)
-  {
-    throw new ApiError(404,"Please provide the event to be deleted")
-  }
-
-    const deletedEvent = await Event.findByIdAndDelete(eventId)
-
-
-    if(!deleteEvent)
-    {
-      throw new ApiError(404,"Sorry this is invalid or does not exist")
-    }
-
-
-
-    return res.status(202)
-    .json(
-      new ApiResponse(200,{},"Event deleted successfully")
-    )
-
-
-
-
-
-
-
-
-
-
- })
-
-
- const getAllEvents =  asyncHandler(async(req,res)=>{
-
-
-    const events = await Event.find({})
-
-
-if(!events)
-{
-  throw new ApiError(400,"Sorry no event has been found yet")
-}
-
-
-return res.status(202).json(
-  new ApiResponse(200,events,"Events fetched successfully")
-)
-
-
-
-
-
-
-
- })
-
-
-
-
-
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Event deleted successfully")
+  );
+});
 
 
 

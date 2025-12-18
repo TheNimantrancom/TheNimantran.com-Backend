@@ -73,7 +73,7 @@ router.get("/getTrendingCards", getTrendingCards);
 
 // Event
 
-router.post("/addEvent",upload.single("eventImage"),addEvent)
+router.post("/addEvent",addEvent)
 router.get("/events",getAllEvents)
 router.delete("/deleteEvent/:eventId",deleteEvent)
 /* --- Orders --- */
