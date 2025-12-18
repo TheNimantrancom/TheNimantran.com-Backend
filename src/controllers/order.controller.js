@@ -6,44 +6,84 @@ import { v4 as uuidv4 } from "uuid"; // For unique order IDs
 import { Card } from "../models/card.model.js";
 
 export const createOrder = asyncHandler(async (req, res) => {
-  const userId = req.user?._id;
-  
+  const user = req.user;
+  const userId = user._id;
+
   const {
     items,
-    totalAmount,
-    discount,
-    tax,
-    shippingFee,
-    finalAmount,
     paymentMethod,
     shippingAddress
   } = req.body;
-  
 
   if (!items || items.length === 0) {
     throw new ApiError(400, "Order items are required");
   }
-const populatedItems = await Promise.all(
-  items.map(async (item) => {
-    const card = await Card.findById(item.cardId);
-    return {
-      cardId: card._id,
-      name: card.name,
-      category: card.category,
-      price: card.price,
-      discount: card.discount || 0,
-      quantity: item.quantity,
-      image: card.images.primaryImage,
-      color: card.color,
-      size: card.size
-    };
-  })
-);
+
+  let totalAmount = 0;
+  let discount = 0;
+
+  const populatedItems = await Promise.all(
+    items.map(async (item) => {
+      const card = await Card.findById(item.cardId);
+
+      if (!card) {
+        throw new ApiError(404, "Card not found");
+      }
+
+      const isWholesale =
+        user.wholesalerStatus === "approved" &&
+        card.isAvailableForWholesale;
+
+      const packSize = isWholesale
+        ? card.quantityPerBundleWholesale
+        : card.quantityPerBundleCustomer;
+
+      const pricePerPack = isWholesale
+        ? card.wholesalePrice
+        : card.price;
+
+      const discountPerPack = isWholesale
+        ? card.wholesaleDiscount || 0
+        : card.discount || 0;
+
+      const packs = Number(item.quantity);
+
+      const itemTotal = packs * pricePerPack;
+      const itemDiscount = packs * discountPerPack;
+
+      totalAmount += itemTotal;
+      discount += itemDiscount;
+
+      return {
+        cardId: card._id,
+        name: card.name,
+        categories: card.categories,
+        packs,
+        packSize,
+        pricePerPack,
+        discountPerPack,
+        totalPrice: itemTotal,
+        image: card.images?.primaryImage,
+        specifications: card.specifications,
+        isWholesale
+      };
+    })
+  );
+
+  const deliveryThreshold =
+    user.wholesalerStatus === "approved" ? 2000 : 200;
+
+  const shippingFee =
+    totalAmount - discount >= deliveryThreshold ? 0 : 40;
+
+  const tax = 0;
+
+  const finalAmount = totalAmount - discount + shippingFee + tax;
 
   const order = await Order.create({
     orderId: uuidv4(),
     user: userId,
-    items:populatedItems,
+    items: populatedItems,
     totalAmount,
     discount,
     tax,
@@ -59,6 +99,7 @@ const populatedItems = await Promise.all(
     .status(201)
     .json(new ApiResponse(201, order, "Order created successfully"));
 });
+
 
 export const getUserOrders = asyncHandler(async (req, res) => {
   const userId = req.user?._id;

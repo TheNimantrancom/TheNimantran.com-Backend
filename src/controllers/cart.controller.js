@@ -78,52 +78,55 @@ const removeCartCard = asyncHandler(async (req, res) => {
 });
 
 const totalCartAmount = asyncHandler(async (req, res) => {
+  const user = req.user;
 
-   const user = req.user;
-  const cart = await Cart.findOne({ userId: req.user._id })
-    .populate("cards.cardId", "price isAvailableForWholesale wholesalePrice discount")
+  const cart = await Cart.findOne({ userId: user._id })
+    .populate("cards.cardId")
     .lean();
 
   if (!cart || cart.cards.length === 0) {
     throw new ApiError(404, "Cart is empty");
   }
 
-  const total = cart.cards.reduce(
-  (acc, item) => {
-    const wholesaleEligible =
-      user?.wholesalerStatus === "approved" &&
-      item?.quantity >= 1 &&
-      item?.cardId?.isAvailableForWholesale;
+  let total = 0;
+  let discount = 0;
 
-    if (wholesaleEligible) {
-      const packs = item.quantity;
-      return acc + packs * (item.cardId?.wholesalePrice || 0);
-    } else {
-      const packs = item.quantity;
-      return acc + packs * (item.cardId?.price || 0);
-    }
-  }, 0
+  for (const item of cart.cards) {
+    const card = item.cardId;
+
+    const isWholesale =
+      user.wholesalerStatus === "approved" &&
+      card.isAvailableForWholesale;
+
+    const pricePerPack = isWholesale
+      ? card.wholesalePrice
+      : card.price;
+
+    const discountPerPack = isWholesale
+      ? card.wholesaleDiscount
+      : card.discount;
+
+    total += item.quantity * pricePerPack;
+    discount += item.quantity * discountPerPack;
+  }
+
+  const deliveryThreshold =
+    user.wholesalerStatus === "approved" ? 2000 : 200;
+
+  const deliveryCharge =
+    total - discount >= deliveryThreshold ? 0 : 40;
+
+  const finalAmount = total - discount + deliveryCharge;
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      { total, discount, deliveryCharge, finalAmount },
+      "Total calculated successfully"
+    )
   );
-
-   const discount = cart.cards.reduce((acc, item) => {
-    const wholesaleEligible =
-      user?.wholesalerStatus === "approved" &&
-      item?.quantity >= 1000 &&
-      item?.cardId?.isAvailableForWholesale;
-
-    if (wholesaleEligible) {
-      const packs = item.quantity
-      return acc+packs*(item.cardId?.wholesaleDiscount || 0); 
-    } else {
-      const packs = item.quantity 
-      return acc + packs * (item.cardId?.discount || 0);
-    }
-  }, 0);
-
-
-  const finalAmount =  (total-discount >200) ?  total-discount:Number(total.discount+40);
-  res.status(200).json(new ApiResponse(200, { finalAmount,total,discount }, "Total calculated for User"));
 });
+
 
 
 

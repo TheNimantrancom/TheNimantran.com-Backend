@@ -40,12 +40,11 @@ import { getAllEvents } from "../controllers/admin/event.controller.js";
 import passport from "passport";
 import { getActiveCategories } from "../controllers/category.controller.js";
 import { searchCards, searchSuggestions } from "../controllers/search.controller.js";
+import { downloadInvoice } from "../controllers/invoice.controller.js";
 
 const router = Router();
 
-/* ========================
-   AUTH ROUTES
-======================== */
+
 router.post("/auth/registerUser", registerUser);
 router.post("/auth/reset-password",resetPassword)
 router.post("/auth/loginUser", loginUser);
@@ -74,16 +73,12 @@ router.delete("/cart/removeCartCard/:cardId", verifyJWT,removeCartCard);
 router.put("/cart/updateCartCardQuantity/:cardId", verifyJWT, updateCartCardQuantity);
 router.delete("/cart/emptyCart",verifyJWT,emptyCart)
 router.get("/cart/totalAmount",verifyJWT,totalCartAmount)
-/* ========================
-   REVIEW ROUTES
-======================== */
+
 router.post("/review/createReview", verifyJWT, createReview);
 router.put("/review/updateReview/:id", verifyJWT, updateReview);
 router.delete("/review/deleteReview/:id", verifyJWT, deleteReview);
 
-/* ========================
-   CARD ROUTES
-======================== */
+
 router.get("/card/getAllCards", getAllCards);
 router.get("/card/getCard/:id",getCardById);
  // use query params for filters
@@ -96,6 +91,11 @@ router.get("/order/getUserOrders", verifyJWT, getUserOrders);
 
 router.put("/order/cancelOrder/:id", verifyJWT, cancelOrder);
 router.get("/order/getCertainOrder/:orderId",verifyJWT,getCertainOrder)    
+router.get(
+  "/orders/:orderId/invoice",
+  verifyJWT,
+  downloadInvoice
+);
 
 
 // Address
