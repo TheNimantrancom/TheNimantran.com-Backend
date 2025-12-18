@@ -77,61 +77,81 @@ const removeCartCard = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, updatedCart, "Item removed"));
 });
 
-const totalCartAmount = asyncHandler(async (req, res) => {
+export const totalCartAmount = asyncHandler(async (req, res) => {
   const user = req.user;
 
   const cart = await Cart.findOne({ userId: user._id })
     .populate("cards.cardId")
     .lean();
 
-  if (!cart || cart.cards.length === 0) {
+  if (!cart || !cart.cards || cart.cards.length === 0) {
     throw new ApiError(404, "Cart is empty");
   }
 
   let total = 0;
   let discount = 0;
-  console.log("here is the cart",cart)
 
   for (const item of cart.cards) {
-    const card = item.cardId;
-   
-    if(!card)
-    {
-      continue
+    const card = item?.cardId;
+
+    if (!card) {
+      continue;
     }
+
+    const quantity = Number(item.quantity) || 0;
 
     const isWholesale =
       user.wholesalerStatus === "approved" &&
       card.isAvailableForWholesale;
 
     const pricePerPack = isWholesale
-      ? card.wholesalePrice
-      : card.price;
+      ? Number(card.wholesalePrice) || 0
+      : Number(card.price) || 0;
 
     const discountPerPack = isWholesale
-      ? card.wholesaleDiscount
-      : card.discount;
+      ? Number(card.wholesaleDiscount) || 0
+      : Number(card.discount) || 0;
 
-    total += item.quantity * pricePerPack;
-    discount += item.quantity * discountPerPack;
+    total += quantity * pricePerPack;
+    discount += quantity * discountPerPack;
   }
+
+  if (total <= 0) {
+    throw new ApiError(400, "No valid items found in cart");
+  }
+
+  const taxableAmount = Math.max(total - discount, 0);
+
+  const GST_RATE = 0.18;
+  const gstAmount = Number((taxableAmount * GST_RATE).toFixed(2));
 
   const deliveryThreshold =
     user.wholesalerStatus === "approved" ? 2000 : 200;
 
   const deliveryCharge =
-    total - discount >= deliveryThreshold ? 0 : 40;
+    taxableAmount >= deliveryThreshold ? 0 : 40;
 
-  const finalAmount = total - discount + deliveryCharge;
+  const finalAmount = Number(
+    (taxableAmount + gstAmount + deliveryCharge).toFixed(2)
+  );
 
-  res.status(200).json(
+  return res.status(200).json(
     new ApiResponse(
       200,
-      { total, discount, deliveryCharge, finalAmount },
+      {
+        subtotal: total,
+        discount,
+        taxableAmount,
+        gstRate: "18%",
+        gstAmount,
+        deliveryCharge,
+        finalAmount,
+      },
       "Total calculated successfully"
     )
   );
 });
+
 
 
 
