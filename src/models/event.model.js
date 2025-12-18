@@ -8,10 +8,6 @@ eventName:{
   type:String,
   trim:true
 },
-eventImageUrl:{
-  type:String,
-  required:true
-},
 eventMediaKey:{
   type:String,
   lowercase:true,
