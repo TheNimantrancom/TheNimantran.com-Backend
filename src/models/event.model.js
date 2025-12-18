@@ -1,27 +1,32 @@
 import mongoose from "mongoose";
 
+const eventSchema = new mongoose.Schema(
+  {
+    eventName: {
+      type: String,
+      required: true,
+      trim: true
+    },
 
+    eventMediaKey: {
+      type: String,
+      required: true,
+      trim: true
+    },
 
-const eventSchema = new mongoose.Schema({
+    eventMediaType: {
+      type: String,
+      required: true,
+      trim: true
+    },
 
-eventName:{
-  type:String,
-  trim:true
-},
-eventMediaKey:{
-  type:String,
-  lowercase:true,
-  trim:true
-},
-eventMediaType:{
-  type:String,
-  lowercase:true,
-  trim:true
-},
-link:{
-  type:String
-}
-})
+    link: {
+      type: String,
+      required: true,
+      trim: true
+    }
+  },
+  { timestamps: true }
+);
 
-
-export const Event = mongoose.model("Event",eventSchema);
+export const Event = mongoose.model("Event", eventSchema);

@@ -31,7 +31,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 import isAdmin from "../middlewares/authAdmin.middleware.js";
 import { loginUser } from "../controllers/user.controller.js";
 import {  reviewWholesaler, getWholesalerApplications, getAllUsers } from "../controllers/admin/user.controller.js";
-import { addEvent, deleteEvent, getAllEvents } from "../controllers/admin/event.controller.js";
+import { addEvent, deleteEvent, getAllEvents, updateEvent } from "../controllers/admin/event.controller.js";
 import { getPresignedUploadUrl } from "../controllers/upload.controllers.js";
 
 const router = Router();
@@ -76,6 +76,7 @@ router.get("/getTrendingCards", getTrendingCards);
 router.post("/addEvent",addEvent)
 router.get("/events",getAllEvents)
 router.delete("/deleteEvent/:eventId",deleteEvent)
+router.post("/updateEvent/:eventId",updateEvent)
 /* --- Orders --- */
 router.get("/getAllOrders", getAllOrders);
 router.delete("/deleteOrder/:id", deleteOrder);
