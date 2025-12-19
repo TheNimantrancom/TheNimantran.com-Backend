@@ -6,7 +6,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: true,
-      index: true 
+      index: true
     },
 
     user: {
@@ -30,22 +30,33 @@ const orderSchema = new mongoose.Schema(
       index: true
     },
 
-    
+
     items: [
       {
         cardId: { type: mongoose.Schema.Types.ObjectId, ref: "Card" },
         name: String,
-        category: String,
-        price: Number,
-        discount: Number,
-        quantity: Number,
+        categories: [{
+          type: String
+        }],
+        packSize: Number,
+        pricePerPack: Number,
+        discountPerPack: Number,
+        totalPrice: Number,
+        isWholesale: Boolean,
+        specifications: {
+          material: String,
+          dimensions: String,
+          printing: String,
+          weight: String,
+          color: String,
+          customizable: { type: Boolean, default: false }
+        },
         image: String,
-        color: String,
-        size: String
+        packs: Number,
       }
     ],
 
-    
+
     totalAmount: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
@@ -83,7 +94,7 @@ const orderSchema = new mongoose.Schema(
     // 🏢 Admin / Franchise Info
     placedBy: {
       type: String,
-      enum: ["user", "admin", "franchise","retailer"],
+      enum: ["user", "admin", "franchise", "retailer"],
       default: "user"
     },
     franchiseId: { type: mongoose.Schema.Types.ObjectId, ref: "Franchise" },
