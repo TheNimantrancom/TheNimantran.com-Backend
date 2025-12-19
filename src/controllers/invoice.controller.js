@@ -1,83 +1,107 @@
-import PDFDocument from "pdfkit";
 import Order from "../models/order.model.js";
-import ApiError  from "../utils/apiError.js";
-import  asyncHandler  from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import { generateInvoice } from "../utils/inVoiceGenerator.js";
+
 
 export const downloadInvoice = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-  const { orderId } = req.params;
+  try {
+    const userId = req.user?._id;
+    const { orderId } = req.params;
 
-  const order = await Order.findOne({
-    orderId,
-    user: userId,
-  }).lean();
+    if (!userId) {
+      throw new ApiError(401, "User not authenticated");
+    }
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
+    if (!orderId) {
+      throw new ApiError(400, "Order ID is required");
+    }
+
+    // Fetch order with validation
+    const order = await Order.findOne({
+      orderId: orderId.trim(),
+      user: userId
+    }).lean();
+
+    if (!order) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    // Validate required order data
+    const requiredFields = ['orderId', 'items', 'totalAmount', 'finalAmount'];
+    for (const field of requiredFields) {
+      if (!order[field]) {
+        throw new ApiError(400, `Invalid order data: Missing ${field}`);
+      }
+    }
+
+    // Validate shipping address
+    if (!order.shippingAddress || !order.shippingAddress.name) {
+      throw new ApiError(400, "Invalid shipping address in order");
+    }
+
+    // Validate items array
+    if (!Array.isArray(order.items) || order.items.length === 0) {
+      throw new ApiError(400, "No items found in order");
+    }
+
+    // Generate invoice
+    const invoiceBuffer = await generateInvoice(order);
+
+    // Set response headers
+    res.setHeader("Content-Disposition", `attachment; filename="Invoice-${order.orderId}.pdf"`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", invoiceBuffer.length);
+
+    // Send PDF
+    res.send(invoiceBuffer);
+
+  } catch (error) {
+    // Log the error for debugging
+    console.error("Invoice generation error:", error);
+
+    // Handle specific errors
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    // Handle PDF generation errors
+    if (error.message?.includes("PDF")) {
+      throw new ApiError(500, "Failed to generate invoice PDF");
+    }
+
+    // Handle unexpected errors
+    throw new ApiError(500, "An unexpected error occurred while generating invoice");
   }
+});
 
-  const doc = new PDFDocument({ margin: 40 });
+// Optional: Add a preview endpoint
+export const previewInvoice = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { orderId } = req.params;
 
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=Invoice-${order.orderId}.pdf`
-  );
-  res.setHeader("Content-Type", "application/pdf");
+    if (!userId || !orderId) {
+      throw new ApiError(400, "Invalid request");
+    }
 
-  doc.pipe(res);
+    const order = await Order.findOne({
+      orderId: orderId.trim(),
+      user: userId
+    }).lean();
 
-  doc.fontSize(20).text("INVOICE", { align: "center" });
-  doc.moveDown();
+    if (!order) {
+      throw new ApiError(404, "Order not found");
+    }
 
-  doc.fontSize(10);
-  doc.text(`Order ID: ${order.orderId}`);
-  doc.text(`Order Date: ${new Date(order.createdAt).toLocaleDateString()}`);
-  doc.text(`Payment Method: ${order.paymentMethod}`);
-  doc.moveDown();
+    const invoiceBuffer = await generateInvoice(order);
 
-  doc.text("Shipping Address:");
-  doc.text(`${order.shippingAddress.name}`);
-  doc.text(`${order.shippingAddress.addressLine1}`);
-  doc.text(`${order.shippingAddress.city}, ${order.shippingAddress.state}`);
-  doc.text(`${order.shippingAddress.pincode}`);
-  doc.moveDown();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="Invoice-${order.orderId}.pdf"`);
+    res.send(invoiceBuffer);
 
-  doc.fontSize(12).text("Order Items", { underline: true });
-  doc.moveDown(0.5);
-
-  order.items.forEach((item, index) => {
-    doc.fontSize(10).text(`${index + 1}. ${item.name}`);
-    doc.text(`   Packs: ${item.packs}`);
-    doc.text(`   Cards per Pack: ${item.packSize}`);
-    doc.text(`   Price per Pack: ₹${item.pricePerPack}`);
-    doc.text(`   Discount per Pack: ₹${item.discountPerPack}`);
-    doc.text(`   Item Total: ₹${item.totalPrice}`);
-    doc.text(
-      `   Type: ${item.isWholesale ? "Wholesale" : "Retail"}`
-    );
-    doc.moveDown(0.5);
-  });
-
-  doc.moveDown();
-  doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
-  doc.moveDown();
-
-  doc.fontSize(11);
-  doc.text(`Subtotal: ₹${order.totalAmount}`);
-  doc.text(`Discount: -₹${order.discount}`);
-  doc.text(`Shipping: ₹${order.shippingFee}`);
-  doc.text(`Tax: ₹${order.tax}`);
-  doc.moveDown();
-
-  doc.fontSize(13).text(`Final Amount: ₹${order.finalAmount}`, {
-    bold: true,
-  });
-
-  doc.moveDown(2);
-  doc.fontSize(10).text(
-    "Thank you for shopping with us!",
-    { align: "center" }
-  );
-
-  doc.end();
+  } catch (error) {
+    console.error("Invoice preview error:", error);
+    throw error;
+  }
 });
