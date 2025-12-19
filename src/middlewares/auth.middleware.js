@@ -6,7 +6,6 @@ import { User } from "../models/user.model.js";
 
 const verifyJWT = asyncHandler(async (req, res, next) => {
   let token = null;
-   console.log("verifyJWT has been hitted")
   if (req.cookies?.accessToken) { 
     token = req.cookies.accessToken;
   }

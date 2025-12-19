@@ -122,7 +122,10 @@ export const getCertainOrder = asyncHandler(async (req,res)=>{
   }
 
 
-  const order = await Order.findOne({orderId});
+  const order = await Order.findOne({orderId}).populate({
+    path: "items.cardId",
+    select: "name price images.primaryImage categories discount wholesalePrice wholesaleDiscount quantityPerBundleWholesale quantityPerBundleCustomer"
+  });
 
 
   if(!order)
