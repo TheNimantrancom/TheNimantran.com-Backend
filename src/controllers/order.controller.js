@@ -76,7 +76,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   const shippingFee =
     totalAmount - discount >= deliveryThreshold ? 0 : 40;
 
-  const taxableAmount = Math.max(total - discount, 0);
+  const taxableAmount = Math.max(totalAmount - discount, 0);
   const GST_RATE = 0.18;
   const gstAmount = Number((taxableAmount * GST_RATE).toFixed(2));
 
