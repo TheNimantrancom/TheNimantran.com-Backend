@@ -161,7 +161,12 @@ const checkOtp = asyncHandler(async (req, res) => {
 
   
     const order = await Order.findById(new mongoose.Types.ObjectId(orderId));
-    
+    if (order.status === "confirmed") {
+  return res.status(200).json(
+    new ApiResponse(200, { orderId: order._id }, "Order already confirmed")
+  );
+}
+
     if (!order) {
       throw new ApiError(404, "Order not found");
     }
