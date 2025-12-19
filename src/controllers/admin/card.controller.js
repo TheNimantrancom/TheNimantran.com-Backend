@@ -4,7 +4,7 @@ import asyncHandler from "../../utils/asyncHandler.js";
 import { Card } from "../../models/card.model.js";
 import { deleteFromS3, generateSignedUrl } from "../../utils/awsS3.js";
 import { refreshSignedUrlsIfNeeded } from "../../utils/signedUrlCache.js";
-
+import {Cart} from "../../models/cart.model.js"
 /**fcount
  * Create a new card  (Pure S3 + CloudFront)
  */
@@ -211,25 +211,39 @@ export const getCardById = asyncHandler(async (req, res) => {
 /**
  * Delete card + delete files from S3
  */
-export const deleteCard = asyncHandler(async (req, res) => {
-  const card = await Card.findByIdAndDelete(req.params.id);
 
+export const deleteCard = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const card = await Card.findById(id);
   if (!card) throw new ApiError(404, "Card not found");
 
-  // Delete linked S3 files (best-effort)
+  await Car.updateMany(
+    { "cards.cardId": card._id },
+    { $pull: { cards: { cardId: card._id } } }
+  );
+
   try {
-    if (card.images?.primaryImageKey) await deleteFromS3(card.images.primaryImageKey);
+    if (card.images?.primaryImageKey) {
+      await deleteFromS3(card.images.primaryImageKey);
+    }
   } catch (err) {
     console.warn("Failed to delete primary image from S3:", err);
   }
 
   try {
-    if (card.images?.secondaryImageKey) await deleteFromS3(card.images.secondaryImageKey);
+    if (card.images?.secondaryImageKey) {
+      await deleteFromS3(card.images.secondaryImageKey);
+    }
   } catch (err) {
     console.warn("Failed to delete secondary image from S3:", err);
   }
 
-  res.status(200).json(new ApiResponse(200, null, "Card deleted successfully"));
+  await card.deleteOne();
+
+  res.status(200).json(
+    new ApiResponse(200, null, "Card deleted and removed from all carts")
+  );
 });
 
 /**
