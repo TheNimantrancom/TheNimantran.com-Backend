@@ -117,6 +117,8 @@ export const getAllCards = asyncHandler(async (req, res) => {
         specifications: 1,
         price: 1,
         wholesalePrice: 1,
+        wholesaleDiscount:1,
+        quantityPerBundleWholesale:1,
         discount: 1,
         finalPrice: 1,
         displayPrice: 1,
