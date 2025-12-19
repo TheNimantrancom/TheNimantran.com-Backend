@@ -1,7 +1,7 @@
 import Order from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
-import { generateInvoice } from "../utils/inVoiceGenerator.js";
+import { generateInvoice } from "../utils/invoiceGenerator.js";
 
 
 export const downloadInvoice = asyncHandler(async (req, res) => {
