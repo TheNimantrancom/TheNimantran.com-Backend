@@ -14,7 +14,7 @@ export const createCard = asyncHandler(async (req, res) => {
 
   const {
     name,
-    category,
+    categories,
     price,
     quantityAvailable,
     specifications,
@@ -35,7 +35,7 @@ export const createCard = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Primary and Secondary image keys are required");
   }
 
-  if (!name || !category || price === undefined || quantityAvailable === undefined) {
+  if (!name || !categories || price === undefined || quantityAvailable === undefined) {
     throw new ApiError(400, "Required fields missing: name, category, price, quantityAvailable");
   }
 
@@ -52,10 +52,13 @@ export const createCard = asyncHandler(async (req, res) => {
     color: specifications?.color || "",
     customizable: specifications?.customizable === "true" || specifications?.customizable === true,
   };
+const formattedCategories = Array.isArray(categories)
+  ? categories.map(c => c.toLowerCase().trim())
+  : [categories.toLowerCase().trim()];
 
   const card = await Card.create({
     name,
-    category: category.toLowerCase(),
+    categories:formattedCategories,
     price: Number(price),
     quantityAvailable: Number(quantityAvailable),
     discount: discount ? Number(discount) : 0,
@@ -81,12 +84,9 @@ export const createCard = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, card, "Card created successfully"));
 });
 
-/**
- * Update a card (Pure S3 + CloudFront)
- */
+
 export const updateCard = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log("Update card:", id);
 
   if (!id.match(/^[0-9a-fA-F]{24}$/)) {
     throw new ApiError(400, "Invalid card ID");
@@ -97,7 +97,7 @@ export const updateCard = asyncHandler(async (req, res) => {
 
   const {
     name,
-    category,
+    categories,
     price,
     quantityAvailable,
     discount,
@@ -111,31 +111,49 @@ export const updateCard = asyncHandler(async (req, res) => {
     isTrending,
     specifications,
     primaryImageKey,
-       quantityPerBundleCustomer,
+    quantityPerBundleCustomer,
     quantityPerBundleWholesale,
     secondaryImageKey,
   } = req.body;
 
-  // Basic required field validation (you can relax this if partial updates allowed)
-  if (!name || !category || price === undefined || quantityAvailable === undefined) {
-    throw new ApiError(400, "Required fields missing: name, category, price, quantityAvailable");
+  if (
+    !name ||
+    !categories ||
+    price === undefined ||
+    quantityAvailable === undefined
+  ) {
+    throw new ApiError(
+      400,
+      "Required fields missing: name, categories, price, quantityAvailable"
+    );
   }
 
-  // Prepare update data
+  const formattedCategories = Array.isArray(categories)
+    ? categories.map(c => c.toLowerCase().trim())
+    : [categories.toLowerCase().trim()];
+
   const updateData = {
     name,
-    category: category.toLowerCase(),
+    categories: formattedCategories,
     price: Number(price),
     quantityAvailable: Number(quantityAvailable),
     discount: discount ? Number(discount) : 0,
-    wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 0,
+    wholesalePrice: wholesalePrice ? Number(wholesalePrice) : card.wholesalePrice,
+    wholesaleDiscount: wholesaleDiscount ? Number(wholesaleDiscount) : card.wholesaleDiscount,
     rating: rating !== undefined ? Number(rating) : card.rating,
     description: description ?? card.description,
-      wholesaleDiscount:wholesaleDiscount? Number(wholesaleDiscount):0,
-       quantityPerBundleCustomer:Number(quantityPerBundleCustomer),
-    quantityPerBundleWholesale:Number(quantityPerBundleWholesale),
-    reviewsCount: reviewsCount !== undefined ? Number(reviewsCount) : card.reviewsCount,
-    isAvailableForWholesale: isAvailableForWholesale === "true" || isAvailableForWholesale === true,
+    quantityPerBundleCustomer:
+      quantityPerBundleCustomer !== undefined
+        ? Number(quantityPerBundleCustomer)
+        : card.quantityPerBundleCustomer,
+    quantityPerBundleWholesale:
+      quantityPerBundleWholesale !== undefined
+        ? Number(quantityPerBundleWholesale)
+        : card.quantityPerBundleWholesale,
+    reviewsCount:
+      reviewsCount !== undefined ? Number(reviewsCount) : card.reviewsCount,
+    isAvailableForWholesale:
+      isAvailableForWholesale === "true" || isAvailableForWholesale === true,
     isPopular: isPopular === "true" || isPopular === true,
     isTrending: isTrending === "true" || isTrending === true,
     specifications: {
@@ -144,20 +162,13 @@ export const updateCard = asyncHandler(async (req, res) => {
     },
   };
 
-  // Prepare images object starting from existing
-  const imagesUpdate = {
-    ...card.images,
-  };
+  const imagesUpdate = { ...card.images };
 
-  // Primary Image Update (if provided)
   if (primaryImageKey) {
-    // delete old object if exists
     if (card.images?.primaryImageKey) {
       try {
         await deleteFromS3(card.images.primaryImageKey);
-      } catch (err) {
-        console.warn("Warning: failed to delete old primary image from S3", err);
-      }
+      } catch {}
     }
 
     imagesUpdate.primaryImageKey = primaryImageKey;
@@ -165,14 +176,11 @@ export const updateCard = asyncHandler(async (req, res) => {
     imagesUpdate.primaryUrlExpiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
   }
 
-  // Secondary Image Update (if provided)
   if (secondaryImageKey) {
     if (card.images?.secondaryImageKey) {
       try {
         await deleteFromS3(card.images.secondaryImageKey);
-      } catch (err) {
-        console.warn("Warning: failed to delete old secondary image from S3", err);
-      }
+      } catch {}
     }
 
     imagesUpdate.secondaryImageKey = secondaryImageKey;
@@ -180,7 +188,6 @@ export const updateCard = asyncHandler(async (req, res) => {
     imagesUpdate.secondaryUrlExpiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
   }
 
-  // Attach images update to updateData if changed
   updateData.images = imagesUpdate;
 
   const updatedCard = await Card.findByIdAndUpdate(id, updateData, {
@@ -190,8 +197,11 @@ export const updateCard = asyncHandler(async (req, res) => {
 
   if (!updatedCard) throw new ApiError(500, "Failed to update card");
 
-  res.status(200).json(new ApiResponse(200, updatedCard, "Card updated successfully"));
+  res
+    .status(200)
+    .json(new ApiResponse(200, updatedCard, "Card updated successfully"));
 });
+
 
 /**
  * Get a single card
@@ -301,7 +311,9 @@ export const getTrendingCards = asyncHandler(async (req, res) => {
 export const getAllCards = asyncHandler(async (req, res) => {
   let query = {};
 
-  if (req.query.category) query.category = req.query.category.toLowerCase();
+  if (req.query.category) {
+    query.categories = req.query.category.toLowerCase();
+  }
 
   if (req.query.minPrice || req.query.maxPrice) {
     query.price = {};
@@ -320,12 +332,17 @@ export const getAllCards = asyncHandler(async (req, res) => {
   if (req.query.sortBy) {
     const parts = req.query.sortBy.split(":");
     sort[parts[0]] = parts[1] === "desc" ? -1 : 1;
-  } else sort.createdAt = -1;
+  } else {
+    sort.createdAt = -1;
+  }
 
-  const cards = await Card.find(query).skip(skip).limit(limit).sort(sort);
+  const cards = await Card.find(query)
+    .skip(skip)
+    .limit(limit)
+    .sort(sort);
+
   const total = await Card.countDocuments(query);
 
-  // Refresh signed URLs if needed and persist
   let updated = false;
   for (const c of cards) {
     if (refreshSignedUrlsIfNeeded(c)) updated = true;
@@ -341,6 +358,7 @@ export const getAllCards = asyncHandler(async (req, res) => {
     data: cards,
   });
 });
+
 
 /**
  * Update card rating
