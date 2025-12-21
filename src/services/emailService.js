@@ -45,7 +45,7 @@ async sendPasswordResetOTP(email, name, otp) {
 
 async sendVerifyOrderOTP(email,otp) {
   const html = EmailTemplates.verifyOrderOTP(otp);
-  return this.sendEmail(email, `Order Verification #${orderData.orderId} - TheNimantran`, html);
+  return this.sendEmail(email, `Order Verification - TheNimantran`, html);
 }
 
 async sendOrderCancelled(email, orderData) {
