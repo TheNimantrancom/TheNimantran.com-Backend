@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { verifyOtp } from "./verification.controller.js";
 import { options } from "../middlewares/auth.middleware.js";
 import WholesalerApplication from "../models/wholesaler.model.js";
+import emailService from "../services/emailService.js";
 
 /**
  * Utility: sanitize user document before sending in response
@@ -93,15 +94,23 @@ if(!token)
     throw new ApiError(409, "Try using another email");
   }
 
+
+
+
   const user = await User.create({ name, email, password, phone,isVerified:true });
 
   const userSafe = sanitizeUser(user);
+
+
+    await emailService.sendWelcomeEmail(email,name)
 
 
   const responseData = {
     ...userSafe,
     isVerified: userSafe?.isVerified ?? false,
   };
+
+
 
   return res
     .status(201)

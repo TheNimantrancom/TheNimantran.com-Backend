@@ -119,7 +119,7 @@ const sendOTP = asyncHandler(async (req, res) => {
   // );
 if(purpose==="register")
 {
-  await emailService.sendRegistrationOTP(cleanEmail,user.name,otp)
+  await emailService.sendRegistrationOTP(cleanEmail,user?.name || "New User",otp)
 }
 if(purpose==="login")
 {
@@ -241,6 +241,7 @@ const checkOtp = asyncHandler(async (req, res) => {
       process.env.REGISTER_TOKEN_SECRET,
       { expiresIn: process.env.REGISTER_TOKEN_EXPIRY }
     );
+    
     res.cookie("emailVerifiedToken", token, options);
   }
 
