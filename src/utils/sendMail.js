@@ -59,7 +59,7 @@ import dotenv from "dotenv"
 
 
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   secure:true,
   host:"smtp.gmail.com",
   port:465,
@@ -71,17 +71,17 @@ const transporter = nodemailer.createTransport({
 }
 )
 
-const sendEmail = (email,subject,data)=>{transporter.sendMail({
- from:`"TheNimantran.com" ${""}`,
- to:email,
- subject:subject,
- html:` 
-    <h1>TheNimantran.com</h1>
-    <h2>Your OTP for verification :<h2>
+// const sendEmail = (email,subject,data)=>{transporter.sendMail({
+//  from:`"TheNimantran.com" ${""}`,
+//  to:email,
+//  subject:subject,
+//  html:` 
+//     <h1>TheNimantran.com</h1>
+//     <h2>Your OTP for verification :<h2>
  
-    <h3>    ${data}     </h3>`
-})
+//     <h3>    ${data}     </h3>`
+// })
          
-};
+// };
 
-export {sendEmail}
+// export {sendEmail}

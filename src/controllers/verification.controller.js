@@ -2,13 +2,14 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import bcrypt from "bcrypt";
-import { sendEmail } from "../utils/sendMail.js";
+// import { sendEmail } from "../utils/sendMail.js";
 import { redisClient } from "../middlewares/otp.middleware.js";
 import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { options } from "../middlewares/auth.middleware.js";
 import Order from "../models/order.model.js";
 import mongoose from "mongoose"
+import emailService from "../services/emailService.js";
 export const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -75,7 +76,7 @@ const sendOTP = asyncHandler(async (req, res) => {
   }
 
   if (purpose === "register") {
-    if (user) throw new ApiError(400, "User already registered");
+    if (user && user.isVerified) throw new ApiError(400, "User already registered");
   }
 
   const now = Date.now();
@@ -111,12 +112,27 @@ const sendOTP = asyncHandler(async (req, res) => {
 
   console.log(`OTP generated for ${cleanEmail}: ${otp}`); // For debugging - remove in production
 
-  await sendEmail(
-    cleanEmail,
-    `Your OTP for ${purpose.replace("-", " ")}`,
-    `Your OTP is: ${otp}. Valid for 5 minutes.`
-  );
-
+  // await sendEmail(
+  //   cleanEmail,
+  //   `Your OTP for ${purpose.replace("-", " ")}`,
+  //   `Your OTP is: ${otp}. Valid for 5 minutes.`
+  // );
+if(purpose==="register")
+{
+  await emailService.sendRegistrationOTP(cleanEmail,user.name,otp)
+}
+if(purpose==="login")
+{
+  await emailService.sendLoginOTP(cleanEmail,user.name,otp)
+}
+if(purpose==="reset-password")
+{
+  await emailService.passwordResetOTP(cleanEmail,user.name,otp)
+}
+if(purpose=="confirm-order")
+{
+  await emailService.sendOrderConfirmation()
+}
   return res
     .status(202)
     .json(new ApiResponse(200, {}, "OTP has been sent successfully"));
@@ -214,11 +230,8 @@ const checkOtp = asyncHandler(async (req, res) => {
     `;
 
     try {
-      await sendEmail(
-        process.env.OWNER_EMAIL,
-        `New Order Confirmed - ${order._id}`,
-        emailContent
-      );
+   
+      await emailService.sendNewOrderAdmin(  process.env.OWNER_EMAIL,emailContent)
     } catch (emailError) {
       console.error("Failed to send email to owner:", emailError);
       // Don't throw error - order is already confirmed
@@ -237,7 +250,6 @@ const checkOtp = asyncHandler(async (req, res) => {
     );
   }
 
-  // Handle register purpose
   if (purpose === "register") {
     const token = jwt.sign(
       { email: cleanEmail },
@@ -247,7 +259,6 @@ const checkOtp = asyncHandler(async (req, res) => {
     res.cookie("emailVerifiedToken", token, options);
   }
 
-  // Handle reset-password purpose
   if (purpose === "reset-password") {
     const token = jwt.sign(
       { email: cleanEmail },
