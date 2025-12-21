@@ -1,7 +1,6 @@
 // services/emailTemplates.js
 class EmailTemplates {
   static getLogoUrl() {
-    // Use your company logo URL or base64 encoded image
     return process.env.LOGO_URL || 'https://thenimantran.com/logo.png';
   }
 
@@ -226,49 +225,25 @@ class EmailTemplates {
     return this.getBaseTemplate(content, 'Password Reset Verification - TheNimantran');
   }
 
-  static verifyOrderOTP(order) {
+  static verifyOrderOTP(otp) {
     const content = `
       <div class="content">
         <h2>✅ Order Verification Required</h2>
-        <p>Dear ${order.customerName},</p>
         <p>Your order has been processed successfully! To complete the verification process, please use the OTP below:</p>
         
         <div class="otp-container">
-          ${order.otp}
+          ${otp}
         </div>
         
-        <div class="order-details">
-          <h3>Order Summary</h3>
-          <div class="detail-row">
-            <span>Order ID:</span>
-            <strong>${order.orderId}</strong>
-          </div>
-          <div class="detail-row">
-            <span>Order Date:</span>
-            <span>${new Date(order.orderDate).toLocaleDateString()}</span>
-          </div>
-          <div class="detail-row">
-            <span>Total Amount:</span>
-            <strong>₹${order.totalAmount}</strong>
-          </div>
-          <div class="detail-row">
-            <span>Items:</span>
-            <span>${order.itemCount || '1'} item(s)</span>
-          </div>
-          <div class="detail-row">
-            <span>Delivery Address:</span>
-            <span>${order.shippingAddress}</span>
-          </div>
-        </div>
+     
+  
         
         <p style="margin: 20px 0; padding: 15px; background-color: #e7f4ff; border-radius: 5px; border-left: 4px solid #007bff;">
           <strong>📝 Note:</strong> Please provide this OTP to our delivery executive when you receive your order. 
           This is required to complete the delivery process.
         </p>
         
-        <center>
-          <a href="${process.env.BASE_URL}/orders/${order.orderId}/track" class="button">Track Your Order</a>
-        </center>
+
         
         <p>Thank you for shopping with us!<br>TheNimantran Team</p>
       </div>
@@ -279,7 +254,7 @@ class EmailTemplates {
       </div>
     `;
     
-    return this.getBaseTemplate(content, `Order Verification #${order.orderId} - TheNimantran`);
+    return this.getBaseTemplate(content, `Order Verification - TheNimantran.com`);
   }
 
   static orderCancelled(order) {
@@ -449,7 +424,7 @@ class EmailTemplates {
     const content = `
       <div class="content">
         <h2>🎉 Order Confirmed!</h2>
-        <p>Dear ${order.customerName},</p>
+        <p>Dear ${order.user.name || "N/A"}</p>
         <p>Thank you for your order! We're excited to let you know that we've received your order and it's being processed.</p>
         
         <div class="order-details">
@@ -460,11 +435,11 @@ class EmailTemplates {
           </div>
           <div class="detail-row">
             <span>Order Date:</span>
-            <span>${new Date(order.orderDate).toLocaleDateString()}</span>
+            <span>${new Date(order.createdAt).toLocaleDateString()}</span>
           </div>
           <div class="detail-row">
             <span>Total Amount:</span>
-            <strong>₹${order.totalAmount}</strong>
+            <strong>₹${order.finalAmount}</strong>
           </div>
           <div class="detail-row">
             <span>Payment Method:</span>

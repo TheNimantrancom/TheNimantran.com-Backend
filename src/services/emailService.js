@@ -43,8 +43,8 @@ async sendPasswordResetOTP(email, name, otp) {
   return this.sendEmail(email, 'Password Reset Verification - TheNimantran', html);
 }
 
-async sendVerifyOrderOTP(email, orderData) {
-  const html = EmailTemplates.verifyOrderOTP(orderData);
+async sendVerifyOrderOTP(email,otp) {
+  const html = EmailTemplates.verifyOrderOTP(otp);
   return this.sendEmail(email, `Order Verification #${orderData.orderId} - TheNimantran`, html);
 }
 

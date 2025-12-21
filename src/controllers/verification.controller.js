@@ -2,7 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import bcrypt from "bcrypt";
-// import { sendEmail } from "../utils/sendMail.js";
+// import { sendEmail } from "../utils/sendMail.js"; 
 import { redisClient } from "../middlewares/otp.middleware.js";
 import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
@@ -131,7 +131,8 @@ if(purpose==="reset-password")
 }
 if(purpose=="confirm-order")
 {
-  await emailService.sendOrderConfirmation()
+
+  await emailService.sendVerifyOrderOTP(cleanEmail,otp)
 }
   return res
     .status(202)
@@ -207,31 +208,15 @@ const checkOtp = asyncHandler(async (req, res) => {
     await order.populate("user", "name email wholesalerStatus");
  
     console.log("Here is the order",order)
-    const emailContent = `
-      New Order Confirmed!
-      
-      Order ID: ${order._id}
-      Customer: ${order.user?.name || "N/A"}
-      Email: ${order.user?.email || "N/A"}
-      Phone: ${order.user?.phone || "N/A"}
-      Wholesaler: ${order.user?.wholesalerStatus ? "Yes" : "No"}
-      
-      Total Amount: ₹${order.finalAmount || 0}
-      Payment Method: ${order.paymentMethod || "N/A"}
-      
-      Items: ${order.items?.length || 0} item(s)
-      
-      Shipping Address:
-      ${order.shippingAddress?.address || "N/A"}
-      ${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""}
-      ${order.shippingAddress?.pincode || ""}
-      
-      View order details in admin panel.
-    `;
+   
 
     try {
-   
-      await emailService.sendNewOrderAdmin(  process.env.OWNER_EMAIL,emailContent)
+      
+      await Promise.all([
+   emailService.sendNewOrderAdmin(  process.env.OWNER_EMAIL,order),
+  emailService.sendOrderConfirmation(cleanEmail,order)
+      ])
+    
     } catch (emailError) {
       console.error("Failed to send email to owner:", emailError);
       // Don't throw error - order is already confirmed
