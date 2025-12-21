@@ -11,7 +11,7 @@ import WholesalerApplication from "../models/wholesaler.model.js";
 import emailService from "../services/emailService.js";
 
 /**
- * Utility: sanitize user document before sending in response
+ * Utility: sanitize userfg document before sending in response
  * Removes sensitive fields and mongoose internals.
  */
 const sanitizeUser = (userDoc) => {
@@ -201,6 +201,7 @@ export const googleCallbackLogin = asyncHandler(async (req, res) => {
       wholesalerStatus: "none",
       isVerified: true,
     });
+    await emailService.sendWelcomeEmail(req.user.email,req.user.name)
   }
 
   const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
