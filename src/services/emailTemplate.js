@@ -1,7 +1,7 @@
 // services/emailTemplates.js
 class EmailTemplates {
   static getLogoUrl() {
-    return process.env.LOGO_URL || 'https://thenimantran.com/logo.png';
+    return process.env.LOGO_URL || 'https://thenimantran.com/weblogo.png';
   }
 
   static getBaseTemplate(htmlContent, title) {
@@ -239,8 +239,8 @@ class EmailTemplates {
   
         
         <p style="margin: 20px 0; padding: 15px; background-color: #e7f4ff; border-radius: 5px; border-left: 4px solid #007bff;">
-          <strong>📝 Note:</strong> Please provide this OTP to our delivery executive when you receive your order. 
-          This is required to complete the delivery process.
+          <strong>📝 Note:</strong> Please provide this OTP to further confirm your order and avoid any fraud. 
+          This is required to complete the delivery process via Cash on Delivery.
         </p>
         
 

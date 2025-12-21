@@ -127,7 +127,7 @@ if(purpose==="login")
 }
 if(purpose==="reset-password")
 {
-  await emailService.passwordResetOTP(cleanEmail,user.name,otp)
+  await emailService.sendPasswordResetOTP(cleanEmail,user.name,otp)
 }
 if(purpose=="confirm-order")
 {
