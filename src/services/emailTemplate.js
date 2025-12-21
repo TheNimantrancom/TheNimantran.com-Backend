@@ -4,7 +4,7 @@ class EmailTemplates {
     return process.env.LOGO_URL || 'https://thenimantran.com/weblogo.png';
   }
 
-  static getBaseTemplate(htmlContent, title) {
+static getBaseTemplate(htmlContent, title) {
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -17,112 +17,304 @@ class EmailTemplates {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+          }
+          
+          body {
+            background-color: #FFFBF5;
+            padding: 20px 10px;
           }
           
           .email-container {
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 10px;
+            background-color: #FFFFFF;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 40px rgba(139, 69, 19, 0.08);
+            border: 1px solid #F5E6D3;
           }
           
           .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 30px 20px;
+            background: linear-gradient(135deg, #FFFBF5 0%, #F8F0E3 100%);
+            padding: 40px 20px 30px;
             text-align: center;
+            border-bottom: 1px solid #F5E6D3;
           }
           
-          .logo {
-            max-width: 200px;
-            height: auto;
+          .logo-container {
+            display: inline-block;
+            padding: 15px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.1);
             margin-bottom: 20px;
           }
           
+          .logo {
+            max-width: 180px;
+            height: auto;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+          }
+          
           .company-name {
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            margin-top: 10px;
+            color: #8B4513;
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 15px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 4px rgba(139, 69, 19, 0.1);
+          }
+          
+          .tagline {
+            color: #A67C52;
+            font-size: 16px;
+            font-weight: 500;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
           }
           
           .content {
-            padding: 40px 30px;
-            color: #333333;
-            line-height: 1.6;
+            padding: 50px 40px;
+            color: #5D4037;
+            line-height: 1.7;
+            background-color: #FFFFFF;
+          }
+          
+          .content h1, .content h2, .content h3 {
+            color: #8B4513;
+            margin-bottom: 20px;
+            font-weight: 600;
+          }
+          
+          .content p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #5D4037;
           }
           
           .otp-container {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #FFF9F0 0%, #FFEDD5 100%);
+            color: #8B4513;
+            padding: 25px;
+            border-radius: 15px;
             text-align: center;
-            margin: 30px 0;
-            font-size: 32px;
-            font-weight: bold;
-            letter-spacing: 10px;
+            margin: 40px 0;
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: 15px;
+            border: 2px dashed #E6B89C;
+            box-shadow: 0 8px 20px rgba(230, 184, 156, 0.2);
           }
           
           .button {
             display: inline-block;
-            padding: 14px 32px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 16px 40px;
+            background: linear-gradient(135deg, #E6B89C 0%, #D4A574 100%);
+            color: #5D4037;
             text-decoration: none;
-            border-radius: 30px;
-            font-weight: bold;
-            margin: 20px 0;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            margin: 25px 0;
             text-align: center;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 15px rgba(230, 184, 156, 0.3);
+          }
+          
+          .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(230, 184, 156, 0.4);
+            background: linear-gradient(135deg, #D4A574 0%, #C9966F 100%);
           }
           
           .order-details {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
+            background-color: #FFFBF5;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 2px solid #F5E6D3;
+          }
+          
+          .order-details h3 {
+            color: #8B4513;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #E6B89C;
           }
           
           .detail-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eaeaea;
+            padding: 12px 0;
+            border-bottom: 1px solid #F5E6D3;
           }
           
           .detail-row:last-child {
             border-bottom: none;
           }
           
+          .detail-row span:first-child {
+            color: #A67C52;
+            font-weight: 500;
+          }
+          
+          .detail-row span:last-child {
+            color: #5D4037;
+            font-weight: 600;
+          }
+          
           .footer {
-            background-color: #f8f9fa;
-            padding: 30px;
+            background: linear-gradient(135deg, #FFFBF5 0%, #F8F0E3 100%);
+            padding: 40px 30px;
             text-align: center;
-            color: #666666;
-            font-size: 14px;
+            color: #8B4513;
+            border-top: 1px solid #F5E6D3;
+          }
+          
+          .footer p {
+            margin-bottom: 15px;
+            font-size: 15px;
+            line-height: 1.6;
           }
           
           .social-links {
-            margin: 20px 0;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
           }
           
           .social-icon {
-            display: inline-block;
-            margin: 0 10px;
-            color: #667eea;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            color: #8B4513;
             text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(139, 69, 19, 0.1);
+            border: 1px solid #F5E6D3;
           }
           
-          @media only screen and (max-width: 600px) {
+          .social-icon:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(139, 69, 19, 0.2);
+            background: #8B4513;
+            color: #FFFFFF;
+          }
+          
+          .contact-info {
+            margin: 25px 0;
+            padding: 20px;
+            background: #FFFFFF;
+            border-radius: 12px;
+            border: 1px solid #F5E6D3;
+          }
+          
+          .contact-info a {
+            color: #8B4513;
+            text-decoration: none;
+            font-weight: 600;
+          }
+          
+          .contact-info a:hover {
+            text-decoration: underline;
+          }
+          
+          .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #E6B89C, transparent);
+            margin: 30px 0;
+          }
+          
+          .highlight-box {
+            background: linear-gradient(135deg, #FFF9F0 0%, #FFEDD5 100%);
+            border-left: 5px solid #E6B89C;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0;
+          }
+          
+          .highlight-box strong {
+            color: #8B4513;
+          }
+          
+          .badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #E6B89C 0%, #D4A574 100%);
+            color: #FFFFFF;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          @media only screen and (max-width: 650px) {
+            .email-container {
+              border-radius: 15px;
+            }
+            
             .content {
-              padding: 20px 15px;
+              padding: 30px 20px;
+            }
+            
+            .header {
+              padding: 30px 15px 20px;
+            }
+            
+            .company-name {
+              font-size: 26px;
             }
             
             .otp-container {
-              font-size: 24px;
-              letter-spacing: 5px;
+              font-size: 32px;
+              letter-spacing: 10px;
+              padding: 20px;
+            }
+            
+            .button {
+              padding: 14px 30px;
+              font-size: 15px;
+            }
+            
+            .social-links {
+              gap: 15px;
+            }
+            
+            .social-icon {
+              width: 40px;
+              height: 40px;
+              font-size: 14px;
+            }
+            
+            .order-details {
+              padding: 20px;
+            }
+          }
+          
+          @media only screen and (max-width: 480px) {
+            .otp-container {
+              font-size: 28px;
+              letter-spacing: 8px;
+            }
+            
+            .company-name {
+              font-size: 22px;
+            }
+            
+            .detail-row {
+              flex-direction: column;
+              gap: 5px;
             }
           }
         </style>
@@ -130,8 +322,11 @@ class EmailTemplates {
       <body>
         <div class="email-container">
           <div class="header">
-            <img src="${this.getLogoUrl()}" alt="TheNimantran Logo" class="logo">
+            <div class="logo-container">
+              <img src="${this.getLogoUrl()}" alt="TheNimantran Logo" class="logo">
+            </div>
             <div class="company-name">TheNimantran.com</div>
+            <div class="tagline">Elegant Invitations & Gifts</div>
           </div>
           ${htmlContent}
         </div>
