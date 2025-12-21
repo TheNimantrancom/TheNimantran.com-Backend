@@ -428,7 +428,7 @@ const resetPassword = asyncHandler(async(req,res)=>{
     throw new ApiError(400,"Verify with otp first")
   }
 
-  const resetPassToken = jwt.verify(otpToken,process.env.RESTPASS_TOKEN_SECRET)
+  const resetPassToken = jwt.verify(otpToken,process.env.RESETPASS_TOKEN_SECRET)
   
   if(!resetPassToken)
   {
