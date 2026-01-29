@@ -1,4 +1,4 @@
-import { checkUpiPaymentStatus, createOrder, generateUpiQrCode, getOrderDetails, getPaymentDetails, getSupportedUpiApps, handleUpiWebhook, refundPayment, verifyPayment } from '../controllers/payment.controller';
+import { checkUpiPaymentStatus, createOrder, generateUpiQrCode, getOrderDetails, getPaymentDetails, getSupportedUpiApps, handleUpiWebhook, refundPayment, verifyPayment } from '../controllers/payment.controller.js';
 import express from "express"
 const router = express.Router();
 
