@@ -10,5 +10,5 @@ router.use("/admin", adminRoutes);
 router.use("/user", normalRoutes);
 router.use("/wholesaler",wholesalerRoutes)
 router.use("/check",healthRoutes);
-router.use("/cashfree",paymentRoutes)
+router.use("/payments",paymentRoutes)
 export default router;
