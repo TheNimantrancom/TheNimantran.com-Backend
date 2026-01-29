@@ -1,31 +1,32 @@
-const express = require('express');
+import { checkUpiPaymentStatus, createOrder, generateUpiQrCode, getOrderDetails, getPaymentDetails, getSupportedUpiApps, handleUpiWebhook, refundPayment, verifyPayment } from '../controllers/payment.controller';
+import express from "express"
 const router = express.Router();
-const paymentController = require('../controllers/paymentController.js');
+
 
 // Create Razorpay Order (with UPI support)
-router.post('/create-order', paymentController.createOrder);
+router.post('/create-order', createOrder);
 
 // Verify Payment (with UPI VPA support)
-router.post('/verify-payment', paymentController.verifyPayment);
+router.post('/verify-payment', verifyPayment);
 
 // Generate UPI QR Code (Alternative payment method)
-router.post('/upi/qrcode', paymentController.generateUpiQrCode);
+router.post('/upi/qrcode', generateUpiQrCode);
 
 // Check UPI Payment Status
-router.get('/upi/status/:paymentId', paymentController.checkUpiPaymentStatus);
-router.get('/upi/status/order/:orderId', paymentController.checkUpiPaymentStatus);
+router.get('/upi/status/:paymentId', checkUpiPaymentStatus);
+router.get('/upi/status/order/:orderId', checkUpiPaymentStatus);
 
-router.get('/order/:orderId', paymentController.getOrderDetails);
+router.get('/order/:orderId', getOrderDetails);
 
-router.get('/payment/:paymentId', paymentController.getPaymentDetails);
+router.get('/payment/:paymentId', getPaymentDetails);
 
-router.post('/refund', paymentController.refundPayment);
+router.post('/refund', refundPayment);
 
-router.get('/upi/apps', paymentController.getSupportedUpiApps);
+router.get('/upi/apps',getSupportedUpiApps);
 
 router.post('/webhook', 
     express.raw({ type: 'application/json' }),
-    paymentController.handleWebhook
+    handleUpiWebhook
 );
 
 export default router;

@@ -1,5 +1,6 @@
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
+
+import Razorpay from "razorpay"
+import crypto from "crypto"
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -537,12 +538,12 @@ const getSupportedUpiApps = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     createOrder,
     verifyPayment,
     generateUpiQrCode,
     checkUpiPaymentStatus,
-    handleWebhook: handleUpiWebhook, // Updated webhook handler
+     handleUpiWebhook, 
     getOrderDetails,
     getPaymentDetails,
     refundPayment,
