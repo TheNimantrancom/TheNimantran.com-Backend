@@ -6,7 +6,7 @@ services:
     container_name: nimantran-backend
     restart: always
     ports:
-      - "8080:3000"
+      - "8080:8080"
     env_file:
       - .env
     depends_on:
