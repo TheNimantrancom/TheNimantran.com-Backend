@@ -15,6 +15,7 @@ const checkDeliveryAutomatically = asyncHandler(  async (req, res) => {
   if (!lat || !lng) return res.status(400).json({ error: "lat and lng required" });
 
   try {
+    
     const geoResponse = await axios.get(
       `https://maps.googleapis.com/maps/api/geocode/json`,
       {
