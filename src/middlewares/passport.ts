@@ -5,10 +5,6 @@ import {
   VerifyCallback,
 } from "passport-google-oauth20"
 
-/* =========================
-   ENV VALIDATION
-========================= */
-
 const {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
@@ -16,14 +12,21 @@ const {
 } = process.env
 
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !BACKEND_URL) {
-  throw new Error(
-    "Google OAuth environment variables are missing"
-  )
+  throw new Error("Google OAuth environment variables are missing")
 }
 
-/* =========================
-   GOOGLE STRATEGY
-========================= */
+interface GoogleUser {
+  googleId: string
+  name: string
+  email: string
+  picture: string
+}
+
+declare global {
+  namespace Express {
+    interface User extends GoogleUser {}
+  }
+}
 
 passport.use(
   new GoogleStrategy(
@@ -39,7 +42,7 @@ passport.use(
       done: VerifyCallback
     ): Promise<void> => {
       try {
-        const user = {
+        const user: GoogleUser = {
           googleId: profile.id,
           name: profile.displayName,
           email: profile.emails?.[0]?.value || "",
@@ -54,14 +57,10 @@ passport.use(
   )
 )
 
-/* =========================
-   SERIALIZATION
-========================= */
-
 passport.serializeUser((user, done) => {
   done(null, user)
 })
 
 passport.deserializeUser((obj, done) => {
-  done(null, obj)
+  done(null, obj as Express.User)
 })

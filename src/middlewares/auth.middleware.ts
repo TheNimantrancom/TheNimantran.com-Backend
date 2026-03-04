@@ -4,17 +4,12 @@ import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/apiError.js"
 import { User, IUser } from "../models/user.model.js"
 
-/* =========================
-   JWT PAYLOAD TYPE
-========================= */
+
 
 interface ITokenPayload extends JwtPayload {
   _id: string
 }
 
-/* =========================
-   VERIFY JWT MIDDLEWARE
-========================= */
 
 export const verifyJWT = asyncHandler(
   async (
@@ -69,9 +64,7 @@ export const verifyJWT = asyncHandler(
   }
 )
 
-/* =========================
-   COOKIE OPTIONS
-========================= */
+
 
 export const options = {
   httpOnly: true,
