@@ -4,6 +4,7 @@ import {
   Profile,
   VerifyCallback,
 } from "passport-google-oauth20"
+import { User } from "../models/user.model.js"
 
 const {
   GOOGLE_CLIENT_ID,
@@ -13,19 +14,6 @@ const {
 
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !BACKEND_URL) {
   throw new Error("Google OAuth environment variables are missing")
-}
-
-interface GoogleUser {
-  googleId: string
-  name: string
-  email: string
-  picture: string
-}
-
-declare global {
-  namespace Express {
-    interface User extends GoogleUser {}
-  }
 }
 
 passport.use(
@@ -42,11 +30,17 @@ passport.use(
       done: VerifyCallback
     ): Promise<void> => {
       try {
-        const user: GoogleUser = {
-          googleId: profile.id,
-          name: profile.displayName,
-          email: profile.emails?.[0]?.value || "",
-          picture: profile.photos?.[0]?.value || "",
+        const email = profile.emails?.[0]?.value || ""
+
+        let user = await User.findOne({ email })
+
+        if (!user) {
+          user = await User.create({
+            googleId: profile.id,
+            name: profile.displayName,
+            email,
+            isVerified: true,
+          })
         }
 
         done(null, user)

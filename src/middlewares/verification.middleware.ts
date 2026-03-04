@@ -2,9 +2,7 @@ import { Request, Response, NextFunction } from "express"
 import Review, { IReview } from "../models/review.model.js"
 import { Card } from "../models/card.model.js"
 
-/* =========================
-   1. Verify user has not reviewed
-========================= */
+
 
 export const verifyUserHasNotReviewed = async (
   req: Request,
@@ -40,9 +38,7 @@ export const verifyUserHasNotReviewed = async (
   }
 }
 
-/* =========================
-   2. Verify product exists
-========================= */
+
 
 export const verifyProductExists = async (
   req: Request,

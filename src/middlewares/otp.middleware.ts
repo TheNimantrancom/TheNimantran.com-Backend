@@ -1,8 +1,6 @@
 import { createClient, RedisClientType } from "redis"
 
-/* =========================
-   REDIS CONFIG
-========================= */
+
 
 const host: string = process.env.REDIS_HOST || "redis"
 
@@ -18,16 +16,11 @@ export const redisClient: RedisClientType =
     },
   })
 
-/* =========================
-   ERROR HANDLING
-========================= */
 
 redisClient.on("error", (err: unknown) => {
   console.error("Redis Client Error:", err)
 })
 
-/* =========================
-   CONNECT
-========================= */
+
 
 await redisClient.connect()

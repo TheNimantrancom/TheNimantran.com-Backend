@@ -3,14 +3,11 @@ import jwt, { JwtPayload } from "jsonwebtoken"
 import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/apiError.js"
 import { User } from "../models/user.model.js"
-import {IUser} from "../types/models/user.types.js"
-
-
+import { IUser } from "../types/models/user.types.js"
 
 interface ITokenPayload extends JwtPayload {
   _id: string
 }
-
 
 export const verifyJWT = asyncHandler(
   async (
@@ -49,9 +46,9 @@ export const verifyJWT = asyncHandler(
       )
     }
 
-    const user: IUser | null = await User.findById(
-      decoded._id
-    ).select("-password")
+    const user = await User.findById(decoded._id)
+      .select("-password")
+      .lean<IUser>()
 
     if (!user) {
       throw new ApiError(
@@ -61,11 +58,10 @@ export const verifyJWT = asyncHandler(
     }
 
     req.user = user
+
     next()
   }
 )
-
-
 
 export const options = {
   httpOnly: true,

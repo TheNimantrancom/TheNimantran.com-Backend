@@ -6,6 +6,13 @@ export interface IUserModel
 }
 export const ROLES = ["user", "admin", "retailer", "franchise"] as const
 
+declare global {
+  namespace Express {
+    interface User extends IUser {}
+  }
+}
+
+export {}
 export type Role = (typeof ROLES)[number]
 export type WholesalerStatus =
   | "none"
@@ -26,6 +33,7 @@ export interface IUser extends Document {
   isVerified: boolean
   createdAt: Date
   updatedAt: Date
+
 
   isPasswordCorrect(password: string): Promise<boolean>
   generateAccessToken(): string

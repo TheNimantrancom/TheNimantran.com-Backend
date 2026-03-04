@@ -5,9 +5,7 @@ import multer, {
 import path from "path"
 import { Request } from "express"
 
-/* =========================
-   STORAGE CONFIG
-========================= */
+
 
 const storage: StorageEngine = multer.diskStorage({
   destination: (
@@ -29,9 +27,7 @@ const storage: StorageEngine = multer.diskStorage({
   },
 })
 
-/* =========================
-   FILE FILTER
-========================= */
+
 
 const fileFilter = (
   _req: Request,
@@ -45,9 +41,7 @@ const fileFilter = (
   }
 }
 
-/* =========================
-   EXPORT
-========================= */
+
 
 export const upload = multer({
   storage,
