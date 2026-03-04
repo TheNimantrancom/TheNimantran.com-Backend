@@ -25,4 +25,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["node", "-r", "dotenv/config", "--experimental-json-modules", "src/index.js"]
+CMD ["node", "-r", "dotenv/config", "--experimental-json-modules", "dist/index.js"]
