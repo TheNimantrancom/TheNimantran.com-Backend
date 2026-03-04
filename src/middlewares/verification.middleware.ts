@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express"
-import Review, { IReview } from "../models/review.model.js"
+import Review from "../models/review.model.js"
 import { Card } from "../models/card.model.js"
-
-
+import {IReview} from "../types/models/review.types.js"
 
 export const verifyUserHasNotReviewed = async (
   req: Request,
@@ -68,9 +67,7 @@ export const verifyProductExists = async (
   }
 }
 
-/* =========================
-   3. Verify review ownership
-========================= */
+
 
 export const verifyReviewOwnership = async (
   req: Request,
@@ -118,9 +115,7 @@ export const verifyReviewOwnership = async (
   }
 }
 
-/* =========================
-   4. Verify product ownership
-========================= */
+
 
 export const verifyProductOwnership = async (
   req: Request,

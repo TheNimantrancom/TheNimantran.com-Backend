@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
     "start": "node -r dotenv/config --experimental-json-modules src/index.js",
-    "tdev": "ts-node-dev --respawn src/index.ts"
+    "tdev": "tsx watch src/index.ts"
   },
   "author": "",
   "license": "ISC",
@@ -54,6 +54,7 @@
     "@types/qrcode": "^1.5.6",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

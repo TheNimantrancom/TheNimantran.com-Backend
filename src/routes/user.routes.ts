@@ -41,7 +41,6 @@ import passport from "passport";
 import { getActiveCategories } from "../controllers/category.controller.js";
 import { searchCards, searchSuggestions } from "../controllers/search.controller.js";
 import { downloadInvoice } from "../controllers/invoice.controller.js";
-
 const router = Router();
 
 

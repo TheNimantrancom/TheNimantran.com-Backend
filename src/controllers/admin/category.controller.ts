@@ -1,162 +1,214 @@
-import { Category } from "../../models/category.model.js";
-import  asyncHandler  from "../../utils/asyncHandler.js";
-import  ApiError  from "../../utils/apiError.js";
-import  ApiResponse  from "../../utils/apiResponse.js"
+import { Request, Response } from "express"
+import { Types } from "mongoose"
+import { Category } from "../../models/category.model.js"
+import asyncHandler from "../../utils/asyncHandler.js"
+import ApiError from "../../utils/apiError.js"
+import ApiResponse from "../../utils/apiResponse.js"
 
-export const createCategory = asyncHandler(async (req, res) => {
-  const { name, slug, parent, description, image, sortOrder } = req.body;
+interface CreateCategoryBody {
+  name: string
+  slug: string
+  parent?: string | null
+  description?: string
+  image?: string
+  sortOrder?: number
+}
 
-  if (!name || !slug) {
-    throw new ApiError(400, "Name and slug are required");
-  }
+interface UpdateCategoryBody {
+  name?: string
+  slug?: string
+  parent?: string | null
+  description?: string
+  image?: string
+  isActive?: boolean
+  sortOrder?: number
+}
 
-  const existingSlug = await Category.findOne({ slug });
-  if (existingSlug) {
-    throw new ApiError(409, "Category slug already exists");
-  }
+export const createCategory = asyncHandler(
+  async (
+    req: Request<{}, {}, CreateCategoryBody>,
+    res: Response
+  ): Promise<void> => {
+    const { name, slug, parent, description, image, sortOrder } = req.body
 
-  if (parent) {
-    const parentCategory = await Category.findById(parent);
-    if (!parentCategory) {
-      throw new ApiError(400, "Parent category not found");
-    }
-  }
-
-  const category = await Category.create({
-    name,
-    slug,
-    parent: parent || null,
-    description,
-    image,
-    sortOrder
-  });
-
-  res
-    .status(201)
-    .json(new ApiResponse(201, category, "Category created successfully"));
-});
-export const getAllCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.find()
-    .sort({ sortOrder: 1, createdAt: 1 })
-    .lean();
-
-  res.json(new ApiResponse(200, categories, "Categories fetched"));
-});
-export const getCategoryById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const category = await Category.findById(id).lean();
-  if (!category) {
-    throw new ApiError(404, "Category not found");
-  }
-
-  res.json(new ApiResponse(200, category, "Category fetched"));
-});
-export const getCategoryBySlug = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
-
-  const category = await Category.findOne({ slug, isActive: true }).lean();
-  if (!category) {
-    throw new ApiError(404, "Category not found");
-  }
-
-  res.json(new ApiResponse(200, category, "Category fetched"));
-});
-export const updateCategory = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { name, slug, parent, description, image, isActive, sortOrder } = req.body;
-
-  const category = await Category.findById(id);
-  if (!category) {
-    throw new ApiError(404, "Category not found");
-  }
-
-  if (slug && slug !== category.slug) {
-    const slugExists = await Category.findOne({ slug });
-    if (slugExists) {
-      throw new ApiError(409, "Slug already exists");
-    }
-  }
-
- 
-  const parentId = parent === "" ? null : parent;
-
-  if (parentId) {
-    if (parentId.toString() === id.toString()) {
-      throw new ApiError(400, "Category cannot be its own parent");
+    if (!name || !slug) {
+      throw new ApiError(400, "Name and slug are required")
     }
 
-    const parentCategory = await Category.findById(parentId);
-    if (!parentCategory) {
-      throw new ApiError(400, "Parent category not found");
+    const existingSlug = await Category.findOne({ slug })
+    if (existingSlug) {
+      throw new ApiError(409, "Category slug already exists")
     }
-  }
 
-  Object.assign(category, {
-    name,
-    slug,
-    parent: parentId, // Use the converted value
-    description,
-    image,
-    isActive,
-    sortOrder
-  });
-
-  await category.save();
-
-  res.json(new ApiResponse(200, category, "Category updated"));
-});
-export const toggleCategoryStatus = asyncHandler(async (req, res) => { 
-  const { id } = req.params;
-
-  const category = await Category.findById(id);
-  if (!category) {
-    throw new ApiError(404, "Category not found");
-  }
-
-  category.isActive = !category.isActive;
-  await category.save();
-
-  res.json(
-    new ApiResponse(200, category, "Category status updated")
-  );
-});
-export const deleteCategory = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const category = await Category.findById(id);
-  if (!category) {
-    throw new ApiError(404, "Category not found");
-  }
-
-  const hasChildren = await Category.findOne({ parent: id });
-  if (hasChildren) {
-    throw new ApiError(400, "Delete subcategories first");
-  }
-
-  await category.deleteOne();
-
-  res.json(new ApiResponse(200, null, "Category deleted"));
-});
-export const getCategoryTree = asyncHandler(async (req, res) => {
-  const categories = await Category.find({ isActive: true })
-    .sort({ sortOrder: 1 })
-    .lean();
-
-  const map = {};
-  const roots = [];
-
-  categories.forEach(cat => {
-    map[cat._id] = { ...cat, children: [] };
-  });
-
-  categories.forEach(cat => {
-    if (cat.parent) {
-      map[cat.parent]?.children.push(map[cat._id]);
-    } else {
-      roots.push(map[cat._id]);
+    if (parent) {
+      const parentCategory = await Category.findById(parent)
+      if (!parentCategory) {
+        throw new ApiError(400, "Parent category not found")
+      }
     }
-  });
 
-  res.json(new ApiResponse(200, roots, "Category tree fetched"));
-});
+    const category = await Category.create({
+      name,
+      slug,
+      parent: parent || null,
+      description,
+      image,
+      sortOrder
+    })
+
+    res
+      .status(201)
+      .json(new ApiResponse(201, category, "Category created successfully"))
+  }
+)
+
+export const getAllCategories = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const categories = await Category.find()
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .lean()
+
+    res.json(new ApiResponse(200, categories, "Categories fetched"))
+  }
+)
+
+export const getCategoryById = asyncHandler(
+  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+    const { id } = req.params
+
+    const category = await Category.findById(id).lean()
+    if (!category) {
+      throw new ApiError(404, "Category not found")
+    }
+
+    res.json(new ApiResponse(200, category, "Category fetched"))
+  }
+)
+
+export const getCategoryBySlug = asyncHandler(
+  async (req: Request<{ slug: string }>, res: Response): Promise<void> => {
+    const { slug } = req.params
+
+    const category = await Category.findOne({ slug, isActive: true }).lean()
+    if (!category) {
+      throw new ApiError(404, "Category not found")
+    }
+
+    res.json(new ApiResponse(200, category, "Category fetched"))
+  }
+)
+
+export const updateCategory = asyncHandler(
+  async (
+    req: Request<{ id: string }, {}, UpdateCategoryBody>,
+    res: Response
+  ): Promise<void> => {
+    const { id } = req.params
+    const { name, slug, parent, description, image, isActive, sortOrder } =
+      req.body
+
+    const category = await Category.findById(id)
+    if (!category) {
+      throw new ApiError(404, "Category not found")
+    }
+
+    if (slug && slug !== category.slug) {
+      const slugExists = await Category.findOne({ slug })
+      if (slugExists) {
+        throw new ApiError(409, "Slug already exists")
+      }
+    }
+
+    const parentId = parent === "" ? null : parent
+
+    if (parentId) {
+      if (parentId.toString() === id.toString()) {
+        throw new ApiError(400, "Category cannot be its own parent")
+      }
+
+      const parentCategory = await Category.findById(parentId)
+      if (!parentCategory) {
+        throw new ApiError(400, "Parent category not found")
+      }
+    }
+
+    Object.assign(category, {
+      name,
+      slug,
+      parent: parentId,
+      description,
+      image,
+      isActive,
+      sortOrder
+    })
+
+    await category.save()
+
+    res.json(new ApiResponse(200, category, "Category updated"))
+  }
+)
+
+export const toggleCategoryStatus = asyncHandler(
+  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+    const { id } = req.params
+
+    const category = await Category.findById(id)
+    if (!category) {
+      throw new ApiError(404, "Category not found")
+    }
+
+    category.isActive = !category.isActive
+    await category.save()
+
+    res.json(
+      new ApiResponse(200, category, "Category status updated")
+    )
+  }
+)
+
+export const deleteCategory = asyncHandler(
+  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+    const { id } = req.params
+
+    const category = await Category.findById(id)
+    if (!category) {
+      throw new ApiError(404, "Category not found")
+    }
+
+    const hasChildren = await Category.findOne({ parent: id })
+    if (hasChildren) {
+      throw new ApiError(400, "Delete subcategories first")
+    }
+
+    await category.deleteOne()
+
+    res.json(new ApiResponse(200, null, "Category deleted"))
+  }
+)
+
+export const getCategoryTree = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const categories = await Category.find({ isActive: true })
+      .sort({ sortOrder: 1 })
+      .lean()
+
+    const map: Record<string, any> = {}
+    const roots: any[] = []
+
+    categories.forEach((cat: any) => {
+      map[cat._id.toString()] = { ...cat, children: [] }
+    })
+
+    categories.forEach((cat: any) => {
+      if (cat.parent) {
+        map[cat.parent.toString()]?.children.push(
+          map[cat._id.toString()]
+        )
+      } else {
+        roots.push(map[cat._id.toString()])
+      }
+    })
+
+    res.json(new ApiResponse(200, roots, "Category tree fetched"))
+  }
+)

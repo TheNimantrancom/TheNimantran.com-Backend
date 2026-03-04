@@ -4,23 +4,8 @@ import mongoose, {
   Model,
   Types,
 } from "mongoose"
+import { IReview } from "../types/models/review.types.js"
 
-/* =========================
-   REVIEW TYPE
-========================= */
-
-export interface IReview extends Document {
-  user: Types.ObjectId
-  product: Types.ObjectId
-  rating: number
-  comment: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-/* =========================
-   SCHEMA
-========================= */
 
 const reviewSchema = new Schema<IReview>(
   {

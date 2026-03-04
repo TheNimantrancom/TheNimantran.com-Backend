@@ -4,9 +4,6 @@ import mongoose, {
   Model,
 } from "mongoose"
 
-/* =========================
-   EVENT TYPE
-========================= */
 
 export type EventMediaType =
   | "image"

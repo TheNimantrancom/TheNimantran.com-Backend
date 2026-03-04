@@ -1,110 +1,147 @@
-import asyncHandler from "../../utils/asyncHandler.js";
+import { Request, Response } from "express"
+import asyncHandler from "../../utils/asyncHandler.js"
 import Order from "../../models/order.model.js"
-import ApiResponse from "../../utils/apiResponse.js";
-import ApiError from "../../utils/apiError.js";
+import ApiResponse from "../../utils/apiResponse.js"
+import ApiError from "../../utils/apiError.js"
 
+interface UpdatePaymentBody {
+  paymentStatus: string
+  transactionId?: string
+}
 
+interface TrackingBody {
+  deliveryPartner: string
+  trackingId: string
+}
 
+interface UpdateStatusBody {
+  status: string
+}
 
+export const getAllOrders = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const orders = await Order.find()
+      .populate("user", "name email phone")
+      .populate("items.cardId", "name price")
+      .sort({ createdAt: -1 })
 
-
-export const getAllOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find()
-    .populate("user", "name email phone")
-    .populate("items.cardId", "name price")
-    .sort({ createdAt: -1 });
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, orders, "Orders fetched successfully"));
-});
-
-
-export const updatePaymentStatus = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { paymentStatus, transactionId } = req.body;
-
-  const order = await Order.findById(id);
-
-  if (!order) {
-    throw new ApiError(404, "Order not found");
+    res
+      .status(200)
+      .json(new ApiResponse(200, orders, "Orders fetched successfully"))
   }
+)
 
-  order.paymentStatus = paymentStatus;
-  if (transactionId) order.transactionId = transactionId;
+export const updatePaymentStatus = asyncHandler(
+  async (
+    req: Request<{ id: string }, {}, UpdatePaymentBody>,
+    res: Response
+  ): Promise<void> => {
+    const { id } = req.params
+    const { paymentStatus, transactionId } = req.body
 
-  await order.save();
+    const order = await Order.findById(id)
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, order, "Payment status updated successfully"));
-});
+    if (!order) {
+      throw new ApiError(404, "Order not found")
+    }
 
+    order.paymentStatus = paymentStatus
 
-export const addTrackingInfo = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { deliveryPartner, trackingId } = req.body;
+    if (transactionId) {
+      order.transactionId = transactionId
+    }
 
-  const order = await Order.findById(id);
+    await order.save()
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
+    res
+      .status(200)
+      .json(new ApiResponse(200, order, "Payment status updated successfully"))
   }
+)
 
-  order.deliveryPartner = deliveryPartner;
-  order.trackingId = trackingId;
+export const addTrackingInfo = asyncHandler(
+  async (
+    req: Request<{ id: string }, {}, TrackingBody>,
+    res: Response
+  ): Promise<void> => {
+    const { id } = req.params
+    const { deliveryPartner, trackingId } = req.body
 
-  await order.save();
+    const order = await Order.findById(id)
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, order, "Tracking information added successfully"));
-});
-export const deleteOrder = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+    if (!order) {
+      throw new ApiError(404, "Order not found")
+    }
 
-  const order = await Order.findByIdAndDelete(id);
+    order.deliveryPartner = deliveryPartner
+    order.trackingId = trackingId
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
+    await order.save()
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, order, "Tracking information added successfully"))
   }
+)
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Order deleted successfully"));
-});
-// 📌 Update Order Status
-export const updateOrderStatus = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+export const deleteOrder = asyncHandler(
+  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+    const { id } = req.params
 
-  const order = await Order.findById(id);
+    const order = await Order.findByIdAndDelete(id)
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
+    if (!order) {
+      throw new ApiError(404, "Order not found")
+    }
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Order deleted successfully"))
   }
+)
 
-  order.status = status;
-  order.statusHistory.push({ status, date: new Date() });
+export const updateOrderStatus = asyncHandler(
+  async (
+    req: Request<{ id: string }, {}, UpdateStatusBody>,
+    res: Response
+  ): Promise<void> => {
+    const { id } = req.params
+    const { status } = req.body
 
-  await order.save();
+    const order = await Order.findById(id)
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, order, "Order status updated successfully"));
-});
-export const getOrderById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+    if (!order) {
+      throw new ApiError(404, "Order not found")
+    }
 
-  const order = await Order.findById(id)
-    .populate("user", "name email phone")
-    .populate("items.card", "title price");
+    order.status = status
+    order.statusHistory.push({
+      status,
+      date: new Date()
+    })
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
+    await order.save()
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, order, "Order status updated successfully"))
   }
+)
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, order, "Order fetched successfully"));
-});
+export const getOrderById = asyncHandler(
+  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+    const { id } = req.params
+
+    const order = await Order.findById(id)
+      .populate("user", "name email phone")
+      .populate("items.card", "title price")
+
+    if (!order) {
+      throw new ApiError(404, "Order not found")
+    }
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, order, "Order fetched successfully"))
+  }
+)
