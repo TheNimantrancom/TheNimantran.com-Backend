@@ -1,46 +1,13 @@
 import mongoose, {
   Schema,
-  Document,
-  Model,
   Types,
 } from "mongoose"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoosePaginate from "mongoose-paginate-v2"
+import { IUser, IUserModel,ROLES } from "../types/models/user.types.js"
 
-export const ROLES = ["user", "admin", "retailer", "franchise"] as const
 
-export type Role = (typeof ROLES)[number]
-
-export type WholesalerStatus =
-  | "none"
-  | "pending"
-  | "approved"
-  | "declined"
-
-export interface IUser extends Document {
-  _id: Types.ObjectId
-  googleId?: string
-  name: string
-  email: string
-  password?: string
-  phone?: string
-  roles: Role[]
-  wholesalerStatus: WholesalerStatus
-  isBanned: boolean
-  isVerified: boolean
-  createdAt: Date
-  updatedAt: Date
-
-  isPasswordCorrect(password: string): Promise<boolean>
-  generateAccessToken(): string
-  generateRefreshToken(): string
-}
-
-export interface IUserModel
-  extends Model<IUser> {
-  paginate: any
-}
 
 const userSchema = new Schema<IUser>(
   {
@@ -102,31 +69,25 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 )
 
-/* =========================
-   PASSWORD HASHING
-========================= */
+userSchema.pre("save", async function (next) {
+  const user = this as IUser
 
-userSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password")) return next()
+  if (!user.isModified("password")) return next()
+  if (!user.password) return next()
 
-  if (!this.password) return next()
-
-  this.password = await bcrypt.hash(this.password, 12)
+  user.password = await bcrypt.hash(user.password, 12)
   next()
 })
 
-/* =========================
-   METHODS
-========================= */
-
 userSchema.methods.isPasswordCorrect = async function (
+  this: IUser,
   password: string
 ): Promise<boolean> {
   if (!this.password) return false
   return bcrypt.compare(password, this.password)
 }
 
-userSchema.methods.generateAccessToken = function (): string {
+userSchema.methods.generateAccessToken = function (this: IUser): string {
   const secret = process.env.ACCESS_TOKEN_SECRET
   const expiry = process.env.ACCESS_TOKEN_EXPIRY
 
@@ -142,11 +103,11 @@ userSchema.methods.generateAccessToken = function (): string {
       roles: this.roles,
     },
     secret,
-    { expiresIn: expiry }
+    { expiresIn: expiry as jwt.SignOptions["expiresIn"] }
   )
 }
 
-userSchema.methods.generateRefreshToken = function (): string {
+userSchema.methods.generateRefreshToken = function (this: IUser): string {
   const secret = process.env.REFRESH_TOKEN_SECRET
   const expiry = process.env.REFRESH_TOKEN_EXPIRY
 
@@ -154,17 +115,15 @@ userSchema.methods.generateRefreshToken = function (): string {
     throw new Error("Refresh token env variables missing")
   }
 
-  return jwt.sign({ _id: this._id }, secret, {
-    expiresIn: expiry,
-  })
+  return jwt.sign(
+    { _id: this._id },
+    secret,
+    { expiresIn: expiry as jwt.SignOptions["expiresIn"] }
+  )
 }
 
-/* =========================
-   JSON TRANSFORM
-========================= */
-
 userSchema.set("toJSON", {
-  transform(_doc, ret: Partial<IUser> & { _id?: Types.ObjectId }) {
+  transform(_doc, ret: Partial<IUser> & { _id?: Types.ObjectId; id?: string }) {
     if (ret._id) {
       ret.id = ret._id.toString()
       delete ret._id

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express"
-
+import {IUser} from "../types/models/user.types.js"
 const isAdmin = (
   req: Request,
   res: Response,
@@ -7,7 +7,7 @@ const isAdmin = (
 ): void => {
   console.log("isAdmin middleware triggered")
 
-  const user = req.user
+  const user:IUser| any = req.user
 
   if (!user) {
     res.status(401).json({ message: "Unauthorized" })
