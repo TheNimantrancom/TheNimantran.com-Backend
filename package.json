@@ -6,12 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
-    "start": "node -r dotenv/config --experimental-json-modules src/index.js"
+    "start": "node -r dotenv/config --experimental-json-modules src/index.js",
+    "tdev": "ts-node-dev --respawn src/index.ts"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/pdfkit": "^0.17.5",
+    "@types/qrcode": "^1.5.6",
     "@upstash/redis": "^1.35.3",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.11.0",
@@ -42,6 +45,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/mime-types": "^3.0.1",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^25.3.3",
     "ts-node": "^10.9.2",

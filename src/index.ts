@@ -1,5 +1,5 @@
 import app from "./app.js"
-import { connectDB } from "./dB/db.connect"
+import { connectDB } from "./dB/db.connect.js"
 
 import path from "path"
 import { fileURLToPath } from "url"
