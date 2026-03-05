@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Design from '../models/design.model.js';
 import Template from '../models/template.model.js';
+import ApiError from '../utils/apiError.js';
 
 // POST /api/designs - Save or update design
 export const saveDesign = async (req: Request, res: Response): Promise<void> => {
@@ -67,6 +68,11 @@ export const getDesignById = async (req: Request, res: Response): Promise<void> 
 // GET /api/user/designs - Get all designs for a user
 export const getUserDesigns = async (req: Request, res: Response): Promise<void> => {
   try {
+  if(!req.user)
+  {
+    throw new ApiError(401, "Unauthorized");
+  }
+
     const { userId } = req.user._id as any;
     if (!userId) {
       res.status(400).json({ error: 'userId is required' });

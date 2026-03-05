@@ -35,7 +35,7 @@ const userSchema = new Schema<IUser>(
    isEmailVerified:{
   type:Boolean,
   default:false
-   }
+   },
     password: {
       type: String,
       trim: true,
