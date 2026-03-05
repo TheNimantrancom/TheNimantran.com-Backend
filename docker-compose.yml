@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   backend:
-    image: ${DOCKERHUB_USERNAME}/nimantranbackend:latest
+    image: nim/nimantranbackend:latest
     container_name: nimantran-backend
     restart: always
     ports:

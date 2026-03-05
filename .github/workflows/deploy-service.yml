@@ -27,8 +27,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/nimantranbackend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/nimantranbackend:${{ github.sha }}
+            nim/nimantranbackend:latest
+            nim/nimantranbackend:${{ github.sha }}
 
   deploy:
     name: Deploy to EC2
