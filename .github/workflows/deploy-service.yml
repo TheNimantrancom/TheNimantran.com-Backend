@@ -48,7 +48,7 @@ jobs:
 
             cd /home/ubuntu/nimantran-backend
 
-            git pull origin master
+
 
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
