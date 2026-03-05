@@ -135,7 +135,7 @@ export const checkOtp = asyncHandler(async (req, res) => {
     /* RESET PASSWORD FLOW */
     if (purpose === "reset-password") {
         const token = jwt.sign({ email: cleanEmail }, process.env.RESETPASS_TOKEN_SECRET, {
-            expiresIn: process.env.RESETPASS_TOKEN_EXPIRY,
+            expiresIn: 900,
         });
         res.cookie("resetPassToken", token, options);
     }

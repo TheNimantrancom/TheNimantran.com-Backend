@@ -1,13 +1,18 @@
-// services/emailService.js
-// const transporter = require('../config/emailConfig');
+// services/emailService.ts
 import { transporter } from "../utils/sendMail.js";
 import { EmailTemplates } from "./emailTemplate.js";
 class EmailService {
+    from;
     constructor() {
-        this.from = `"TheNimantran.com" <${process.env.EMAIL_FROM || 'noreply@thenimantran.com@gmail.com'}>`;
+        const emailFrom = process.env.EMAIL_FROM || 'noreply@thenimantran.com@gmail.com';
+        this.from = `"TheNimantran.com" <${emailFrom}>`;
     }
     async sendEmail(to, subject, html) {
         try {
+            // Validate email parameters
+            if (!to || !subject || !html) {
+                throw new Error('Missing required email parameters');
+            }
             const mailOptions = {
                 from: this.from,
                 to,
@@ -18,11 +23,14 @@ class EmailService {
             };
             const info = await transporter.sendMail(mailOptions);
             console.log(`Email sent to ${to}: ${info.messageId}`);
-            return { success: true, messageId: info.messageId };
+            return {
+                success: true,
+                messageId: info.messageId
+            };
         }
         catch (error) {
             console.error('Error sending email:', error);
-            throw new Error(`Failed to send email: ${error.message}`);
+            throw new Error(`Failed to send email: ${error?.message || 'Unknown error'}`);
         }
     }
     async sendRegistrationOTP(email, name, otp) {
@@ -33,22 +41,21 @@ class EmailService {
         const html = EmailTemplates.loginOTP(name, otp);
         return this.sendEmail(email, 'Login Verification - TheNimantran', html);
     }
-    // Add to EmailService class
     async sendPasswordResetOTP(email, name, otp) {
         const html = EmailTemplates.passwordResetOTP(name, otp);
         return this.sendEmail(email, 'Password Reset Verification - TheNimantran', html);
     }
     async sendVerifyOrderOTP(email, otp) {
         const html = EmailTemplates.verifyOrderOTP(otp);
-        return this.sendEmail(email, `Order Verification - TheNimantran`, html);
+        return this.sendEmail(email, 'Order Verification - TheNimantran', html);
     }
     async sendOrderCancelled(email, orderData) {
         const html = EmailTemplates.orderCancelled(orderData);
         return this.sendEmail(email, `Order Cancelled #${orderData.orderId} - TheNimantran`, html);
     }
-    async sendOrderReturnRequested(email, orderData) {
-        const html = EmailTemplates.orderReturnRequested(orderData);
-        return this.sendEmail(email, `Return Request #${orderData.returnId} - TheNimantran`, html);
+    async sendOrderReturnRequested(email, returnData) {
+        const html = EmailTemplates.orderReturnRequested(returnData);
+        return this.sendEmail(email, `Return Request #${returnData.returnId} - TheNimantran`, html);
     }
     async sendSubscriptionConfirmation(email, subscriptionData) {
         const html = EmailTemplates.subscriptionConfirmation(subscriptionData);
@@ -79,5 +86,5 @@ class EmailService {
         return this.sendEmail(email, 'Welcome to TheNimantran!', html);
     }
 }
-// module.exports = new EmailService();
-export default new EmailService;
+// Export a singleton instance
+export default new EmailService();

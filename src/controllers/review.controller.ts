@@ -1,11 +1,9 @@
 import { Request, Response } from "express"
 import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/apiError.js"
-import Review, { IReview } from "../models/review.model.js"
+import Review from "../models/review.model.js"
+import { IReview } from "../types/models/review.types.js"
 
-/* =========================
-   CREATE REVIEW
-========================= */
 
 interface CreateReviewBody {
   product: string

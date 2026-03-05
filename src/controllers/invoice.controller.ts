@@ -4,9 +4,7 @@ import ApiError from "../utils/apiError.js"
 import asyncHandler from "../utils/asyncHandler.js"
 import { generateInvoice } from "../utils/invoiceGenerator.js"
 
-/* =========================
-   DOWNLOAD INVOICE
-========================= */
+
 
 export const downloadInvoice = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -21,9 +19,10 @@ export const downloadInvoice = asyncHandler(
       throw new ApiError(400, "Order ID is required")
     }
 
+      
     const order: IOrder | null =
       await Order.findOne({
-        orderId: orderId.trim(),
+        orderId: orderId,
         user: userId,
       })
         .populate("user", "name email phone")

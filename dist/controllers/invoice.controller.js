@@ -2,9 +2,6 @@ import Order from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { generateInvoice } from "../utils/invoiceGenerator.js";
-/* =========================
-   DOWNLOAD INVOICE
-========================= */
 export const downloadInvoice = asyncHandler(async (req, res) => {
     if (!req.user) {
         throw new ApiError(401, "User not authenticated");
@@ -15,7 +12,7 @@ export const downloadInvoice = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Order ID is required");
     }
     const order = await Order.findOne({
-        orderId: orderId.trim(),
+        orderId: orderId,
         user: userId,
     })
         .populate("user", "name email phone")

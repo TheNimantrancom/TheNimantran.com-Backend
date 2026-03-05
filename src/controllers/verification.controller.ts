@@ -7,8 +7,7 @@ import { redisClient } from "../middlewares/otp.middleware.js"
 import { User } from "../models/user.model.js"
 import jwt from "jsonwebtoken"
 import { options } from "../middlewares/auth.middleware.js"
-import Order from "../models/order.model.js"
-import mongoose from "mongoose"
+
 import emailService from "../services/emailService.js"
 
 /* =========================
@@ -41,7 +40,7 @@ export const generateOTP = (): string =>
 
 const otpKeyBuilder = (
   email: string,
-  purpose: OtpPurpose
+  purpose: any
 ) => `otp:${email}:${purpose}:data`
 
 /* =========================
@@ -51,7 +50,7 @@ const otpKeyBuilder = (
 export const verifyOtp = async (
   email: string,
   otp: string,
-  purpose: OtpPurpose
+  purpose: any
 ): Promise<boolean> => {
   const key = otpKeyBuilder(email, purpose)
 
@@ -77,7 +76,7 @@ export const verifyOtp = async (
 
 export const sendOTP = asyncHandler(
   async (
-    req: Request<SendOtpParams>,
+    req: Request,
     res: Response
   ): Promise<Response> => {
     const { purpose } = req.params
@@ -91,7 +90,7 @@ export const sendOTP = asyncHandler(
       "confirm-order",
     ]
 
-    if (!allowedPurposes.includes(purpose)) {
+    if (!allowedPurposes.includes(purpose as any)) {
       throw new ApiError(400, "Invalid OTP purpose")
     }
 
@@ -238,9 +237,9 @@ export const sendOTP = asyncHandler(
 
 export const checkOtp = asyncHandler(
   async (
-    req: Request<{ purpose: OtpPurpose }>,
+    req: Request,
     res: Response
-  ): Promise<Response> => {
+  ) => {
     const { purpose } = req.params
     const { email, otp } =
       req.body as CheckOtpBody
@@ -267,7 +266,7 @@ export const checkOtp = asyncHandler(
     const isCorrect = await verifyOtp(
       cleanEmail,
       cleanOtp,
-      purpose
+      purpose 
     )
 
     if (!isCorrect) {
@@ -284,7 +283,7 @@ export const checkOtp = asyncHandler(
         process.env.REGISTER_TOKEN_SECRET as string,
         {
           expiresIn:
-            process.env.REGISTER_TOKEN_EXPIRY,
+            process.env.REGISTER_TOKEN_EXPIRY as any,
         }
       )
 
@@ -301,8 +300,7 @@ export const checkOtp = asyncHandler(
         { email: cleanEmail },
         process.env.RESETPASS_TOKEN_SECRET as string,
         {
-          expiresIn:
-            process.env.RESETPASS_TOKEN_EXPIRY,
+          expiresIn:900,
         }
       )
 

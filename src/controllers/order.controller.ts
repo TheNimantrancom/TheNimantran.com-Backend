@@ -8,11 +8,10 @@ import Order, {
   PaymentMethod,
 } from "../models/order.model.js"
 import { v4 as uuidv4 } from "uuid"
-import { Card, ICard } from "../models/card.model.js"
+import { Card } from "../models/card.model.js"
+import { ICard } from "../types/models/card.types.js"
 
-/* =========================
-   CREATE ORDER
-========================= */
+
 
 interface CreateOrderItemInput {
   cardId: string
@@ -274,9 +273,6 @@ export const cancelOrder = asyncHandler(
   }
 )
 
-/* =========================
-   UPDATE ORDER STATUS (ADMIN)
-========================= */
 
 export const updateOrderStatus =
   asyncHandler(

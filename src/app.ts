@@ -8,8 +8,8 @@ import cors, { CorsOptions } from "cors"
 import cookieParser from "cookie-parser"
 import passport from "passport"
 
-import adminRoutes from "./routes/admin/index"
-import allRouter from "./routes/index"
+import adminRoutes from "./routes/admin/index.js"
+import allRouter from "./routes/index.js"
 import "./middlewares/passport.js"
 
 const app: Application = express()

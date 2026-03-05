@@ -2,9 +2,6 @@ import { Address } from "../models/address.model.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
-/* =========================
-   ADD ADDRESS
-========================= */
 export const addAddress = asyncHandler(async (req, res) => {
     if (!req.user) {
         throw new ApiError(401, "Unauthorized");

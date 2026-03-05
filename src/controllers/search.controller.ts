@@ -1,10 +1,8 @@
 import { Request, Response } from "express"
 import asyncHandler from "../utils/asyncHandler.js"
-import { Card, ICard } from "../models/card.model.js"
+import { Card } from "../models/card.model.js"
+import { ICard } from "../types/models/card.types.js"
 
-/* =========================
-   QUERY TYPE
-========================= */
 
 interface SearchQuery {
   q?: string
@@ -15,9 +13,7 @@ interface SearchQuery {
   limit?: string
 }
 
-/* =========================
-   SEARCH CARDS
-========================= */
+
 
 export const searchCards = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
@@ -99,9 +95,7 @@ export const searchCards = asyncHandler(
   }
 )
 
-/* =========================
-   SEARCH SUGGESTIONS
-========================= */
+
 
 export const searchSuggestions =
   asyncHandler(

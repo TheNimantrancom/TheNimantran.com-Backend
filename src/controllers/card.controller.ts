@@ -2,30 +2,26 @@ import { Request, Response } from "express"
 import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/apiError.js"
 import ApiResponse from "../utils/apiResponse.js"
-import { Card, ICard } from "../models/card.model.js"
+import { Card } from "../models/card.model.js"
+import {ICard} from "../types/models/card.types.js"
 
-/* =========================
-   GET ALL CARDS
-========================= */
 
 export const getAllCards = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
     const query: Record<string, unknown> = {}
 
-    /* Category filter */
     if (req.query.category) {
       query.categories = {
         $in: [(req.query.category as string).toLowerCase()],
       }
     }
 
-    /* Wholesale filter */
+
     if (req.query.isAvailableForWholesale) {
       query.isAvailableForWholesale =
         req.query.isAvailableForWholesale === "true"
     }
 
-    /* Price range filter */
     if (req.query.minPrice || req.query.maxPrice) {
       query.price = {}
 
@@ -40,12 +36,12 @@ export const getAllCards = asyncHandler(
       }
     }
 
-    /* Popular filter */
+
     if (req.query.isPopular) {
       query.isPopular = req.query.isPopular === "true"
     }
 
-    /* Trending filter */
+
     if (req.query.isTrending) {
       query.isTrending = req.query.isTrending === "true"
     }
@@ -54,7 +50,6 @@ export const getAllCards = asyncHandler(
     const limit = Number(req.query.limit) || 20
     const skip = (page - 1) * limit
 
-    /* Sorting */
     const sort: Record<string, 1 | -1> = {}
 
     if (req.query.sortBy) {
@@ -82,9 +77,7 @@ export const getAllCards = asyncHandler(
   }
 )
 
-/* =========================
-   GET CARD BY ID
-========================= */
+
 
 export const getCardById = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
@@ -102,9 +95,7 @@ export const getCardById = asyncHandler(
   }
 )
 
-/* =========================
-   UPDATE CARD RATING
-========================= */
+
 
 export const updateCardRating = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {

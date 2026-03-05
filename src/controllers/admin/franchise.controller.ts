@@ -1,14 +1,14 @@
-import asyncHandler from "../../utils/asyncHandler";
+// import asyncHandler from "../../utils/asyncHandler.js";
 
 
 
 
-const addFranchise =  asyncHandler(()=>{
+// const addFranchise =  asyncHandler(()=>{
 
-})
-const removeFranchise = asyncHandler(()=>{
+// })
+// const removeFranchise = asyncHandler(()=>{
 
-})
-const updateFranchise = asyncHandler(()=>{
+// })
+// const updateFranchise = asyncHandler(()=>{
 
-})
+// })

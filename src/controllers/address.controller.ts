@@ -1,12 +1,11 @@
 import { Request, Response } from "express"
-import { Address, IAddressInfo } from "../models/address.model.js"
+import {  IAddressInfo } from "../types/models/address.types.js"
+import {Address} from "../models/address.model.js"
 import ApiError from "../utils/apiError.js"
 import ApiResponse from "../utils/apiResponse.js"
 import asyncHandler from "../utils/asyncHandler.js"
 
-/* =========================
-   ADD ADDRESS
-========================= */
+
 
 export const addAddress = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {

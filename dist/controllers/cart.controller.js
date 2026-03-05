@@ -4,9 +4,6 @@ import { Cart } from "../models/cart.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/apiResponse.js";
 import ApiError from "../utils/apiError.js";
-/* =========================
-   ADD TO CART
-========================= */
 export const addToCart = asyncHandler(async (req, res) => {
     if (!req.user)
         throw new ApiError(401, "Unauthorized");
@@ -42,9 +39,6 @@ export const addToCart = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, cart, "Item added to cart"));
 });
-/* =========================
-   GET CART
-========================= */
 export const getCartCards = asyncHandler(async (req, res) => {
     if (!req.user)
         throw new ApiError(401, "Unauthorized");
@@ -62,9 +56,6 @@ export const getCartCards = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, cart.cards, "Cart fetched"));
 });
-/* =========================
-   REMOVE CARD
-========================= */
 export const removeCartCard = asyncHandler(async (req, res) => {
     if (!req.user)
         throw new ApiError(401, "Unauthorized");
@@ -80,9 +71,6 @@ export const removeCartCard = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, updatedCart, "Item removed"));
 });
-/* =========================
-   TOTAL CART AMOUNT
-========================= */
 export const totalCartAmount = asyncHandler(async (req, res) => {
     if (!req.user)
         throw new ApiError(401, "Unauthorized");
@@ -136,9 +124,6 @@ export const totalCartAmount = asyncHandler(async (req, res) => {
         finalAmount,
     }, "Total calculated successfully"));
 });
-/* =========================
-   UPDATE QUANTITY
-========================= */
 export const updateCartCardQuantity = asyncHandler(async (req, res) => {
     if (!req.user)
         throw new ApiError(401, "Unauthorized");
@@ -161,9 +146,6 @@ export const updateCartCardQuantity = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, cart, "Quantity updated"));
 });
-/* =========================
-   EMPTY CART
-========================= */
 export const emptyCart = asyncHandler(async (req, res) => {
     if (!req.user)
         throw new ApiError(401, "Unauthorized");

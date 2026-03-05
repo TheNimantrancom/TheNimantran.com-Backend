@@ -1,8 +1,5 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import { Card } from "../models/card.model.js";
-/* =========================
-   SEARCH CARDS
-========================= */
 export const searchCards = asyncHandler(async (req, res) => {
     const { q = "", category, minPrice = "0", maxPrice = "100000", page = "1", limit = "12", } = req.query;
     const parsedPage = Math.max(1, parseInt(page, 10));
@@ -51,9 +48,6 @@ export const searchCards = asyncHandler(async (req, res) => {
         },
     });
 });
-/* =========================
-   SEARCH SUGGESTIONS
-========================= */
 export const searchSuggestions = asyncHandler(async (req, res) => {
     const { q = "" } = req.query;
     const trimmedQuery = q.trim();

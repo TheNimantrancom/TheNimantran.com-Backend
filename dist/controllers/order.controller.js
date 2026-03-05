@@ -140,9 +140,6 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     await order.save();
     return res.status(200).json(new ApiResponse(200, order, "Order cancelled successfully"));
 });
-/* =========================
-   UPDATE ORDER STATUS (ADMIN)
-========================= */
 export const updateOrderStatus = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;

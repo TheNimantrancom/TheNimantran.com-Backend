@@ -1,14 +1,12 @@
 import { Request, Response } from "express"
 import mongoose from "mongoose"
-import { Card, ICard } from "../models/card.model.js"
+import { Card } from "../models/card.model.js"
 import { Cart } from "../models/cart.model.js"
 import asyncHandler from "../utils/asyncHandler.js"
 import ApiResponse from "../utils/apiResponse.js"
 import ApiError from "../utils/apiError.js"
+import {ICard} from "../types/models/card.types.js"
 
-/* =========================
-   ADD TO CART
-========================= */
 
 export const addToCart = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
@@ -61,9 +59,7 @@ export const addToCart = asyncHandler(
   }
 )
 
-/* =========================
-   GET CART
-========================= */
+
 
 export const getCartCards = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
@@ -94,9 +90,7 @@ export const getCartCards = asyncHandler(
   }
 )
 
-/* =========================
-   REMOVE CARD
-========================= */
+
 
 export const removeCartCard = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
@@ -104,7 +98,7 @@ export const removeCartCard = asyncHandler(
 
     const { cardId } = req.params
 
-    if (!mongoose.Types.ObjectId.isValid(cardId)) {
+    if (!mongoose.Types.ObjectId.isValid(cardId as string)) {
       throw new ApiError(400, "Invalid cardId")
     }
 
@@ -126,9 +120,6 @@ export const removeCartCard = asyncHandler(
   }
 )
 
-/* =========================
-   TOTAL CART AMOUNT
-========================= */
 
 export const totalCartAmount = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
@@ -219,9 +210,6 @@ export const totalCartAmount = asyncHandler(
   }
 )
 
-/* =========================
-   UPDATE QUANTITY
-========================= */
 
 export const updateCartCardQuantity =
   asyncHandler(
@@ -235,7 +223,7 @@ export const updateCartCardQuantity =
       const { cardId } = req.params
       const { quantity } = req.body
 
-      if (!mongoose.Types.ObjectId.isValid(cardId)) {
+      if (!mongoose.Types.ObjectId.isValid(cardId as string)) {
         throw new ApiError(400, "Invalid cardId")
       }
 
@@ -274,9 +262,7 @@ export const updateCartCardQuantity =
     }
   )
 
-/* =========================
-   EMPTY CART
-========================= */
+
 
 export const emptyCart = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
