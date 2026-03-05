@@ -41,6 +41,7 @@ const cardSchema = new Schema<ICard>(
       secondaryImageKey: String,
       secondaryUrlExpiresAt: Date
     },
+    
 
     specifications: {
       material: String,
