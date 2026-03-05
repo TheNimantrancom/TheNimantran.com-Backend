@@ -130,3 +130,6 @@ export const generatePresignedUploadUrl = async (
     viewUrl: `${CLOUDFRONT_URL}/${key}`
   }
 }
+export const getCloudFrontUrl = (key: string): string => {
+  return `${CLOUDFRONT_URL}/${key}`;
+}
