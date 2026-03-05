@@ -136,6 +136,10 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const {password, email } = req.body
     let query: Record<string, string> = {}
 
+      if(!email || !password){  
+        throw new ApiError(400, "Email and password are required")
+      }
+
    if (/\S+@\S+\.\S+/.test(email.trim())) {
       query.email = email.trim().toLowerCase()
     } else {
