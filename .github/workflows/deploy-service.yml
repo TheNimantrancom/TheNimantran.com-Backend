@@ -48,12 +48,22 @@ jobs:
 
             cd /home/ubuntu/nimantran-backend
 
-
-
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-            docker compose pull backend
- 
-            docker compose up -d --force-recreate --remove-orphans
+            echo "Stopping old containers..."
+            docker compose down || true
 
+            echo "Removing old backend image..."
+            docker rmi nimantran/nimantranbackend:latest || true
+
+            echo "Cleaning docker system..."
+            docker system prune -af --volumes || true
+
+            echo "Pulling latest image..."
+            docker compose pull backend
+
+            echo "Starting containers..."
+            docker compose up -d --force-recreate
+
+            echo "Cleaning dangling images..."
             docker image prune -af
