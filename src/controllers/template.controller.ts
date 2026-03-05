@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import Template from '../models/template.model.js';
 
-// POST /api/templates - Create template (admin)
 export const createTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
+
     const { name, category, width, height, dpi, tags, backgroundImage } = req.body
 
     if (!name || !category) {

@@ -67,7 +67,7 @@ export const getDesignById = async (req: Request, res: Response): Promise<void> 
 // GET /api/user/designs - Get all designs for a user
 export const getUserDesigns = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId } = req.user._id;
+    const { userId } = req.user._id as any;
     if (!userId) {
       res.status(400).json({ error: 'userId is required' });
       return;
