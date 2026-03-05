@@ -6,11 +6,11 @@ import ApiResponse from "../utils/apiResponse.js"
 import { redisClient } from "../middlewares/otp.middleware.js"
 import bcrypt from "bcrypt"
 import jwt, { JwtPayload } from "jsonwebtoken"
-import { verifyOtp } from "./verification.controller.js"
 import { options } from "../middlewares/auth.middleware.js"
 import WholesalerApplication from "../models/wholesaler.model.js"
 import emailService from "../services/emailService.js"
 import { IUser } from "../types/models/user.types.js"
+import { z } from "zod";
 
 interface RegisterTokenPayload extends JwtPayload {
   email: string
@@ -59,108 +59,90 @@ const parseBoolean = (value: unknown): boolean => {
   if (typeof value === "string") return value.toLowerCase() === "true"
   return false
 }
+const registerUserSchema = z.object({
+  name: z
+    .string()
+    .min(3, "Name should be at least 3 characters long")
+    .max(40, "Name too large")
+    .optional(),
+  email: z
+    .string()
+    .email("Invalid email address")
+    .min(5, "Email should be at least 5 characters long")
+    .max(50, "Email too large"),
+  phoneNumber: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .optional(),
+  password: z
+    .string()
+    .regex(
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/,
+      "Password must be at least 8 characters long with at least 1 letter, 1 number, and 1 special character (@$!%*?&)"
+    ),
+});
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, password, phone } = req.body
+   console.log("Yes the backend api is hitted");
 
-  if (!name || !email || !password || !phone) {
-    throw new ApiError(400, "All fields are required")
+  const validatedData = registerUserSchema.parse(req.body);
+  let { name, email, password } = validatedData;
+
+  email = email.toLowerCase().trim();
+
+  const existingUser = await User.findOne({
+    email
+  })
+    .select("_id isEmailVerified")
+    .lean();
+
+  if (existingUser?.isEmailVerified) {
+    throw new ApiError(400, "User with this email or username already exists");
   }
 
-  const registerToken = req.cookies?.emailVerifiedToken
-
-  if (!registerToken) {
-    throw new ApiError(400, "Email not verified yet")
+  if (existingUser && !existingUser.isEmailVerified) {
+    await User.deleteOne({ _id: existingUser._id });
   }
 
-  const token = jwt.verify(
-    registerToken,
-    process.env.REGISTER_TOKEN_SECRET as string
-  ) as RegisterTokenPayload
-
-  if (!token) {
-    throw new ApiError(400, "Email not verified yet")
-  }
-
-  if (!/^\d{10}$/.test(phone)) {
-    throw new ApiError(400, "Phone number must be 10 digits")
-  }
-
-  if (!/\S+@\S+\.\S+/.test(email)) {
-    throw new ApiError(400, "Invalid email format")
-  }
-
-  const isExistingUser = await User.findOne({ email }).lean()
-
-  if (isExistingUser) {
-    throw new ApiError(409, "Try using another email")
-  }
 
   const user = await User.create({
     name,
     email,
     password,
-    phone,
-    isVerified: true,
-  })
+  
+  });
 
-  const userSafe = sanitizeUser(user)
+  const response = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isEmailVerified: user.isEmailVerified,
 
-  await emailService.sendWelcomeEmail(email, name)
+  };
 
-  const responseData = {
-    ...userSafe,
-    isVerified: userSafe?.isVerified ?? false,
-  }
-
-  return res
+  res
     .status(201)
     .json(
       new ApiResponse(
         201,
-        responseData,
-        "User registered successfully"
+        response,
+        "Details saved. Verify your email to complete registration."
       )
-    )
-})
+    );
+});
 
 const loginUser = asyncHandler(async (req: Request, res: Response) => {
-  let user: any
 
-  const { otp, emailOrPhone, password, email } = req.body
-
-  if (otp) {
-    if (!email)
-      throw new ApiError(
-        400,
-        "Email is required for OTP verification"
-      )
-
-    user = await User.findOne({ email })
-    if (!user) throw new ApiError(404, "User not found")
-
-    const otpVerified = await verifyOtp(email, otp, "login")
-
-    if (!otpVerified) throw new ApiError(400, "Invalid OTP")
-  } else {
-    if (!emailOrPhone || !password) {
-      throw new ApiError(
-        400,
-        "Email/Phone and password are required"
-      )
-    }
-
+  const {password, email } = req.body
     let query: Record<string, string> = {}
 
-    if (/^\d{10}$/.test(emailOrPhone.trim())) {
-      query.phone = emailOrPhone.trim()
-    } else if (/\S+@\S+\.\S+/.test(emailOrPhone.trim())) {
-      query.email = emailOrPhone.trim().toLowerCase()
+   if (/\S+@\S+\.\S+/.test(email.trim())) {
+      query.email = email.trim().toLowerCase()
     } else {
-      throw new ApiError(400, "Invalid email or phone format")
+      throw new ApiError(400, "Invalid email  format")
     }
 
-    user = await User.findOne(query).select("+password")
+     const user = await User.findOne(query).select("+password")
 
     if (!user) throw new ApiError(404, "User not found")
 
@@ -169,11 +151,11 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     }
 
     const isPasswordCorrect =
-      await user.isPasswordCorrect(password)
+      await user.isPasswordCorrect(password);
 
     if (!isPasswordCorrect)
-      throw new ApiError(401, "Incorrect password")
-  }
+      throw new ApiError(401, "Incorrect password");
+  
 
   const { refreshToken, accessToken } =
     await generateAccessAndRefreshToken(user._id.toString())
@@ -189,7 +171,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
         200,
         {
           ...userSafe,
-          isVerified: userSafe?.isVerified ?? false,
+          isEmailVerified: userSafe?.isEmailVerified ?? false,
         },
         "Login successful"
       )

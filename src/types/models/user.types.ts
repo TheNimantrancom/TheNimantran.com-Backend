@@ -29,6 +29,7 @@ export interface IUser extends Document {
   phone?: string
   roles: Role[]
   wholesalerStatus: WholesalerStatus
+  isEmailVerified: boolean
   isBanned: boolean
   isVerified: boolean
   createdAt: Date

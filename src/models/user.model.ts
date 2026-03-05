@@ -32,7 +32,10 @@ const userSchema = new Schema<IUser>(
       index: true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
     },
-
+   isEmailVerified:{
+  type:Boolean,
+  default:false
+   }
     password: {
       type: String,
       trim: true,
