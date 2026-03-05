@@ -53,7 +53,6 @@ export const uploadToS3 = async (
       }
     } catch {}
   }
-
   try {
     const fileContent = await fs.promises.readFile(localFilePath)
     const fileName = path.basename(localFilePath)
