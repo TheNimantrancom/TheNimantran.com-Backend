@@ -5,7 +5,9 @@ import Template from '../models/template.model.js';
 // POST /api/designs - Save or update design
 export const saveDesign = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { templateId, userId, name, canvasJSON, previewImage, designId } = req.body;
+
+      const userId = req.user?._id;
+    const { templateId, name, canvasJSON, previewImage, designId } = req.body;
 
     if (!templateId || !userId || !canvasJSON) {
       res.status(400).json({ error: 'templateId, userId, and canvasJSON are required' });
@@ -65,7 +67,7 @@ export const getDesignById = async (req: Request, res: Response): Promise<void> 
 // GET /api/user/designs - Get all designs for a user
 export const getUserDesigns = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId } = req.query;
+    const { userId } = req.user._id;
     if (!userId) {
       res.status(400).json({ error: 'userId is required' });
       return;
