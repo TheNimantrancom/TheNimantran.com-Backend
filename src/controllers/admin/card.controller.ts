@@ -34,7 +34,7 @@ interface CreateCardBody {
 }
 
 export const createCard = asyncHandler(
-  async (req: Request<{}, {}, CreateCardBody>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const {
       name,
       categories,
@@ -108,12 +108,12 @@ export const createCard = asyncHandler(
 )
 
 export const updateCard = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      throw new ApiError(400, "Invalid card ID")
-    }
+    // if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    //   throw new ApiError(400, "Invalid card ID")
+    // }
 
     const card = await Card.findById(id)
     if (!card) throw new ApiError(404, "Card not found")
@@ -215,7 +215,7 @@ export const updateCard = asyncHandler(
 )
 
 export const getCardById = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const card = await Card.findById(req.params.id)
 
     if (!card) throw new ApiError(404, "Card not found")
@@ -228,7 +228,7 @@ export const getCardById = asyncHandler(
 )
 
 export const deleteCard = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
 
     const card = await Card.findById(id)
@@ -349,13 +349,13 @@ export const getAllCards = asyncHandler(
 )
 
 export const updateCardRating = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
     const { rating, reviewsCount } = req.body
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      throw new ApiError(400, "Invalid id")
-    }
+    // if (!id?.match(/^[0-9a-fA-F]{24}$/)) {
+    //   throw new ApiError(400, "Invalid id")
+    // }
 
     const card = await Card.findById(id)
     if (!card) throw new ApiError(404, "Card not found")

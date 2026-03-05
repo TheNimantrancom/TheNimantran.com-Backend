@@ -42,13 +42,13 @@ const sanitizeUser = (userDoc: any) => {
 }
 
 const generateAccessAndRefreshToken = async (userId: string) => {
-  const user = await User.findById(userId)
+  const user:any = await User.findById(userId)
   if (!user) throw new ApiError(404, "User not found")
 
   const refreshToken = user.generateRefreshToken()
   const accessToken = user.generateAccessToken()
 
-  user.refreshToken = refreshToken
+  user.refreshToken  = refreshToken
   await user.save({ validateBeforeSave: false })
 
   return { refreshToken, accessToken }
@@ -332,7 +332,7 @@ const refreshAccessToken = asyncHandler(
       throw new ApiError(401, "Invalid refresh token")
     }
 
-    const user = await User.findById(decoded._id).select(
+    const user:any= await User.findById(decoded._id).select(
       "+refreshToken"
     )
 

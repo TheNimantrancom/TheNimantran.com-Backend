@@ -33,7 +33,7 @@ export const getAllOrders = asyncHandler(
 
 export const updatePaymentStatus = asyncHandler(
   async (
-    req: Request<{ id: string }, {}, UpdatePaymentBody>,
+    req: Request,
     res: Response
   ): Promise<void> => {
     const { id } = req.params
@@ -61,7 +61,7 @@ export const updatePaymentStatus = asyncHandler(
 
 export const addTrackingInfo = asyncHandler(
   async (
-    req: Request<{ id: string }, {}, TrackingBody>,
+    req: Request,
     res: Response
   ): Promise<void> => {
     const { id } = req.params
@@ -85,7 +85,7 @@ export const addTrackingInfo = asyncHandler(
 )
 
 export const deleteOrder = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
 
     const order = await Order.findByIdAndDelete(id)
@@ -102,7 +102,7 @@ export const deleteOrder = asyncHandler(
 
 export const updateOrderStatus = asyncHandler(
   async (
-    req: Request<{ id: string }, {}, UpdateStatusBody>,
+    req: Request,
     res: Response
   ): Promise<void> => {
     const { id } = req.params
@@ -129,7 +129,7 @@ export const updateOrderStatus = asyncHandler(
 )
 
 export const getOrderById = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
 
     const order = await Order.findById(id)

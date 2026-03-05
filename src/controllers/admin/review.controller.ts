@@ -1,13 +1,14 @@
 
 import Review from "../../models/review.model.js";
 import asyncHandler from "../../utils/asyncHandler.js";
-
+import ApiError from "../../utils/apiError.js";
+import ApiResponse from "../../utils/apiResponse.js";
 
 
 // Get all reviews (with optional pagination)
 export const getAllReviews = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
+  const page = parseInt(req.query.page as any) || 1;
+  const limit = parseInt(req.query.limit as any) || 20;
   const skip = (page - 1) * limit;
 
   const reviews = await Review.find()

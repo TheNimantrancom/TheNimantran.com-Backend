@@ -4,7 +4,7 @@ class EmailTemplates {
     return process.env.LOGO_URL || 'https://thenimantran.com/weblogo.png';
   }
 
-static getBaseTemplate(htmlContent, title) {
+static getBaseTemplate(htmlContent:any, title:any) {
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -335,7 +335,7 @@ static getBaseTemplate(htmlContent, title) {
     `;
   }
 
-  static registrationOTP(name, otp) {
+  static registrationOTP(name:string, otp:string) {
     const content = `
       <div class="content">
         <h2>Welcome to TheNimantran!</h2>
@@ -366,7 +366,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, 'Complete Your Registration - TheNimantran');
   }
 
-  static loginOTP(name, otp) {
+  static loginOTP(name:string, otp:string) {
     const content = `
       <div class="content">
         <h2>Login Verification</h2>
@@ -390,7 +390,7 @@ static getBaseTemplate(htmlContent, title) {
     
     return this.getBaseTemplate(content, 'Login Verification - TheNimantran');
   }
-  static passwordResetOTP(name, otp) {
+  static passwordResetOTP(name:string, otp:string) {
     const content = `
       <div class="content">
         <h2>🔐 Password Reset Verification</h2>
@@ -420,7 +420,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, 'Password Reset Verification - TheNimantran');
   }
 
-  static verifyOrderOTP(otp) {
+  static verifyOrderOTP(otp:string) {
     const content = `
       <div class="content">
         <h2>✅ Order Verification Required</h2>
@@ -452,7 +452,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, `Order Verification - TheNimantran.com`);
   }
 
-  static orderCancelled(order) {
+  static orderCancelled(order: any) {
     const content = `
       <div class="content">
         <h2>❌ Order Cancelled</h2>
@@ -505,7 +505,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, `Order Cancelled #${order.orderId} - TheNimantran`);
   }
 
-  static orderReturnRequested(order) {
+  static orderReturnRequested(order: any) {
     const content = `
       <div class="content">
         <h2>📦 Return Request Received</h2>
@@ -559,7 +559,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, `Return Request #${order.returnId} - TheNimantran`);
   }
 
-  static subscriptionConfirmation(subscription) {
+  static subscriptionConfirmation(subscription: any) {
     const content = `
       <div class="content">
         <h2>🎁 Subscription Confirmed!</h2>
@@ -596,7 +596,7 @@ static getBaseTemplate(htmlContent, title) {
         
         <p style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 5px; border-left: 4px solid #28a745;">
           <strong>✨ Benefits Activated:</strong><br>
-          ${subscription.benefits.map(benefit => `• ${benefit}`).join('<br>')}
+          ${subscription.benefits.map((benefit: string) => `• ${benefit}`).join('<br>')}
         </p>
         
         <center>
@@ -615,7 +615,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, `Subscription Confirmed - TheNimantran`);
   }
 
-  static orderConfirmation(order) {
+  static orderConfirmation(order: any) {
     const content = `
       <div class="content">
         <h2>🎉 Order Confirmed!</h2>
@@ -668,7 +668,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, 'Order Confirmed - TheNimantran');
   }
 
-  static orderShipped(order) {
+  static orderShipped(order: any) {
     const content = `
       <div class="content">
         <h2>🚚 Your Order is on the Way!</h2>
@@ -711,7 +711,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, 'Your Order is Shipped - TheNimantran');
   }
 
-  static orderDelivered(order) {
+  static orderDelivered(order: any) {
     const content = `
       <div class="content">
         <h2>✅ Order Delivered Successfully!</h2>
@@ -752,7 +752,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, 'Order Delivered - TheNimantran');
   }
 
-  static newOrderAdmin(order) {
+  static newOrderAdmin(order: any) {
     const content = `
       <div class="content">
         <h2>🛒 New Order Received!</h2>
@@ -803,7 +803,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, 'New Order Alert - TheNimantran');
   }
 
-  static passwordReset(name, resetLink) {
+  static passwordReset(name: string, resetLink: string) {
     const content = `
       <div class="content">
         <h2>🔐 Password Reset Request</h2>
@@ -828,7 +828,7 @@ static getBaseTemplate(htmlContent, title) {
     return this.getBaseTemplate(content, 'Password Reset - TheNimantran');
   }
 
-  static welcomeEmail(name) {
+  static welcomeEmail(name: string) {
     const content = `
       <div class="content">
         <h2>🌟 Welcome to TheNimantran Family!</h2>

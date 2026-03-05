@@ -1,4 +1,4 @@
-import { checkUpiPaymentStatus, createOrder, generateUpiQrCode, getOrderDetails, getPaymentDetails, getSupportedUpiApps, handleUpiWebhook, refundPayment, verifyPayment } from '../controllers/payment.controller.js';
+import { checkUpiPaymentStatus, createOrder, generateUpiQrCode,   verifyPayment } from '../controllers/payment.controller.js';
 import express from "express"
 const router = express.Router();
 
@@ -16,17 +16,6 @@ router.post('/upi/qrcode', generateUpiQrCode);
 router.get('/upi/status/:paymentId', checkUpiPaymentStatus);
 router.get('/upi/status/order/:orderId', checkUpiPaymentStatus);
 
-router.get('/order/:orderId', getOrderDetails);
 
-router.get('/payment/:paymentId', getPaymentDetails);
-
-router.post('/refund', refundPayment);
-
-router.get('/upi/apps',getSupportedUpiApps);
-
-router.post('/webhook', 
-    express.raw({ type: 'application/json' }),
-    handleUpiWebhook
-);
 
 export default router;

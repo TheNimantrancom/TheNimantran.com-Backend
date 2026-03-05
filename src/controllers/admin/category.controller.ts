@@ -73,7 +73,7 @@ export const getAllCategories = asyncHandler(
 )
 
 export const getCategoryById = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
 
     const category = await Category.findById(id).lean()
@@ -86,7 +86,7 @@ export const getCategoryById = asyncHandler(
 )
 
 export const getCategoryBySlug = asyncHandler(
-  async (req: Request<{ slug: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response) => {
     const { slug } = req.params
 
     const category = await Category.findOne({ slug, isActive: true }).lean()
@@ -100,7 +100,7 @@ export const getCategoryBySlug = asyncHandler(
 
 export const updateCategory = asyncHandler(
   async (
-    req: Request<{ id: string }, {}, UpdateCategoryBody>,
+    req: Request,
     res: Response
   ): Promise<void> => {
     const { id } = req.params
@@ -149,7 +149,7 @@ export const updateCategory = asyncHandler(
 )
 
 export const toggleCategoryStatus = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response) => {
     const { id } = req.params
 
     const category = await Category.findById(id)
@@ -167,7 +167,7 @@ export const toggleCategoryStatus = asyncHandler(
 )
 
 export const deleteCategory = asyncHandler(
-  async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
 
     const category = await Category.findById(id)

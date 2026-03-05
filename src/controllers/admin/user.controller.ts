@@ -113,7 +113,7 @@ export const getAllUsers = asyncHandler(
 )
 
 const removeUser = asyncHandler(
-  async (req: Request<{ userId: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { userId } = req.params
 
     if (!userId) {
@@ -145,7 +145,7 @@ const removeUser = asyncHandler(
 )
 
 const banUser = asyncHandler(
-  async (req: Request<{ userId: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { userId } = req.params
 
     if (!userId) {
@@ -182,12 +182,9 @@ const banUser = asyncHandler(
 )
 
 export const reviewWholesaler = asyncHandler(
-  async (
-    req: Request<{ id: string }, {}, ReviewBody>,
-    res: Response
-  ): Promise<void> => {
-    const { status } = req.body
-    const appId = req.params.id
+  async (req: Request, res: Response): Promise<void> => {
+    const { status } = req.body as ReviewBody
+    const { id: appId } = req.params as { id: string }
 
     if (!["approved", "declined"].includes(status)) {
       throw new ApiError(400, "Invalid status")
@@ -204,8 +201,7 @@ export const reviewWholesaler = asyncHandler(
 
     await application.save()
 
-    const userStatus =
-      status === "approved" ? "approved" : "declined"
+    const userStatus = status === "approved" ? "approved" : "declined"
 
     await User.findByIdAndUpdate(application.user, {
       wholesalerStatus: userStatus

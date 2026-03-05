@@ -60,7 +60,7 @@ const getAllEvents = asyncHandler(
 )
 
 const deleteEvent = asyncHandler(
-  async (req: Request<{ eventId: string }>, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { eventId } = req.params
 
     if (!eventId) {
@@ -87,7 +87,7 @@ const deleteEvent = asyncHandler(
 
 const updateEvent = asyncHandler(
   async (
-    req: Request<{ eventId: string }, {}, UpdateEventBody>,
+    req: Request,
     res: Response
   ): Promise<void> => {
     const { eventId } = req.params
