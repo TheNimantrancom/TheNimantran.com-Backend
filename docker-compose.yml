@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   backend:
-    image: nim/nimantranbackend:latest
+    image: ayushsingh23/nimantranbackend:latest
     container_name: nimantran-backend
     restart: always
     ports:

@@ -26,9 +26,9 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            nim/nimantranbackend:latest
-            nim/nimantranbackend:${{ github.sha }}
+         tags: |
+            ayushsingh23/nimantranbackend:latest
+            ayushsingh23/nimantranbackend:${{ github.sha }}
 
   deploy:
     name: Deploy to EC2
