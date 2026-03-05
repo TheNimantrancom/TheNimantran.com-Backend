@@ -43,7 +43,6 @@ import { searchCards, searchSuggestions } from "../controllers/search.controller
 import { downloadInvoice } from "../controllers/invoice.controller.js";
 const router = Router();
 
-
 router.post("/auth/registerUser", registerUser);
 router.post("/auth/reset-password",resetPassword)
 router.post("/auth/loginUser", loginUser);
