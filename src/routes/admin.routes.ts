@@ -41,7 +41,7 @@ const router = Router();
 router.post("/securedLogin/login", loginUser);
 
 /* ----------------- PROTECTED ADMIN ROUTES ----------------- */
-router.use(verifyJWT, isAdmin);
+// router.use(verifyJWT, isAdmin);
 
 
 
@@ -85,7 +85,7 @@ router.get("/getOrder/:id", getOrderById);
 router.put("/addTrackingInfo/:id", addTrackingInfo);
 router.put("/updateOrderStatus/:id", updateOrderStatus);
 router.put("/updatePaymentStatus/:id", updatePaymentStatus);
-router.post("/getSignedUrlUpload",getPresignedUploadUrl)
+router.post("/getPresignedUrlUpload",getPresignedUploadUrl)
 
 
 

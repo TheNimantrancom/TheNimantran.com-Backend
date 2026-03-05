@@ -3,7 +3,6 @@ import fs from "fs"
 import path from "path"
 import dotenv from "dotenv"
 import mime from "mime-types"
-import crypto from "crypto"
 
 dotenv.config()
 
@@ -20,8 +19,6 @@ const AWS_SECRET = requireEnv("AWS_SECRET")
 const AWS_REGION = requireEnv("AWS_REGION")
 const AWS_S3_BUCKET_NAME = requireEnv("AWS_S3_BUCKET_NAME")
 const CLOUDFRONT_URL = requireEnv("CLOUDFRONT_URL")
-const CLOUDFRONT_PUBLIC_KEY_ID = requireEnv("CLOUDFRONT_PUBLIC_KEY_ID")
-const PRIVATE_KEY_PATH = requireEnv("PRIVATE_KEY_PATH")
 
 AWS.config.update({
   accessKeyId: AWS_S3_ID,
@@ -31,11 +28,9 @@ AWS.config.update({
 
 const s3 = new AWS.S3()
 
-const privateKey = fs.readFileSync(PRIVATE_KEY_PATH, "utf8")
-
 interface UploadResult {
   key: string
-  signedUrl: string
+  url: string
   s3Location: string
 }
 
@@ -43,33 +38,6 @@ interface PresignedUploadResult {
   uploadUrl: string
   key: string
   viewUrl: string
-}
-
-export function generateSignedUrl(key: string): string {
-  const url = `${CLOUDFRONT_URL}/${key}`
-  const expires = Math.floor(Date.now() / 1000) + 60 * 60 * 24
-
-  const policy = JSON.stringify({
-    Statement: [
-      {
-        Resource: url,
-        Condition: {
-          DateLessThan: {
-            "AWS:EpochTime": expires
-          }
-        }
-      }
-    ]
-  })
-
-  const policyBase64 = Buffer.from(policy).toString("base64")
-
-  const signature = crypto
-    .createSign("RSA-SHA1")
-    .update(policy)
-    .sign(privateKey, "base64")
-
-  return `${url}?Policy=${encodeURIComponent(policyBase64)}&Signature=${encodeURIComponent(signature)}&Key-Pair-Id=${CLOUDFRONT_PUBLIC_KEY_ID}`
 }
 
 export const uploadToS3 = async (
@@ -98,7 +66,7 @@ export const uploadToS3 = async (
       Key: key,
       Body: fileContent,
       ContentType: mimeType as string,
-      ContentDisposition: "inline"
+      CacheControl: "public, max-age=31536000, immutable"
     }
 
     const result = await s3.upload(params).promise()
@@ -107,7 +75,7 @@ export const uploadToS3 = async (
 
     return {
       key,
-      signedUrl: generateSignedUrl(key),
+      url: `${CLOUDFRONT_URL}/${key}`,
       s3Location: result.Location
     }
   } catch (error) {
@@ -137,25 +105,28 @@ export const generatePresignedUploadUrl = async (
   fileType: string,
   folder: string = "uploads"
 ): Promise<PresignedUploadResult> => {
-  try {
-    const key = `${folder}/${Date.now()}-${fileName}`
+  const key = `${folder}/${Date.now()}-${fileName}`
 
-    const params: AWS.S3.PutObjectRequest = {
-      Bucket: AWS_S3_BUCKET_NAME,
-      Key: key,
-      ContentType: fileType,
-      Expires: new Date(Date.now() + 60 * 1000)
-    }
-
-    const uploadUrl = s3.getSignedUrl("putObject", params)
-
-    return {
-      uploadUrl,
+  const params: AWS.S3.PresignedPost.Params = {
+    Bucket: AWS_S3_BUCKET_NAME,
+    Fields: {
       key,
-      viewUrl: generateSignedUrl(key)
-    }
-  } catch (error) {
-    console.error("Error generating presigned S3 URL:", error)
-    throw new Error("Failed to generate presigned upload URL")
+      "Content-Type": fileType,
+      "Cache-Control": "public, max-age=31536000, immutable",
+
+    },
+    Expires: 60
+  }
+
+  const uploadUrl = s3.getSignedUrl("putObject", {
+    Bucket: AWS_S3_BUCKET_NAME,
+    Key: key,
+    ContentType: fileType,
+  })
+
+  return {
+    uploadUrl,
+    key,
+    viewUrl: `${CLOUDFRONT_URL}/${key}`
   }
 }

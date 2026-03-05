@@ -18,7 +18,7 @@ const { FRONT1, FRONT2 } = process.env
 
 const corsOptions: CorsOptions = {
   origin: [
-    "http://localhost:3002",
+    "http://localhost:3000",
     FRONT2 as string,
     FRONT1 as string,
   ].filter(Boolean),

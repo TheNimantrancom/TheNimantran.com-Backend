@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 import {
   generatePresignedUploadUrl,
-  generateSignedUrl,
+  
   deleteFromS3,
 } from "../utils/awsS3.js"
 

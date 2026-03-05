@@ -3,10 +3,9 @@ import ApiError from "../../utils/apiError.js"
 import ApiResponse from "../../utils/apiResponse.js"
 import asyncHandler from "../../utils/asyncHandler.js"
 import { Card } from "../../models/card.model.js"
-import { deleteFromS3, generateSignedUrl } from "../../utils/awsS3.js"
-import { refreshSignedUrlsIfNeeded } from "../../utils/signedUrlCache.js"
+import { deleteFromS3 } from "../../utils/awsS3.js"
 import { Cart } from "../../models/cart.model.js"
-
+import {attachCloudfrontUrls} from "../../utils/signedUrlCache.js"
 interface CreateCardBody {
   name: string
   categories: string[] | string
@@ -62,8 +61,8 @@ export const createCard = asyncHandler(
       throw new ApiError(400, "Required fields missing: name, category, price, quantityAvailable")
     }
 
-    const primaryImageUrl = generateSignedUrl(primaryImageKey)
-    const secondaryImageUrl = generateSignedUrl(secondaryImageKey)
+    const primaryImageUrl = `${process.env.CLOUDFRONT_URL}/${primaryImageKey}`
+    const secondaryImageUrl = `${process.env.CLOUDFRONT_URL}/${secondaryImageKey}`
 
     const formattedSpecs = {
       material: specifications?.material || "",
@@ -96,10 +95,8 @@ export const createCard = asyncHandler(
       images: {
         primaryImage: primaryImageUrl,
         primaryImageKey,
-        primaryUrlExpiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
         secondaryImage: secondaryImageUrl,
-        secondaryImageKey,
-        secondaryUrlExpiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000)
+        secondaryImageKey
       }
     })
 
@@ -110,10 +107,6 @@ export const createCard = asyncHandler(
 export const updateCard = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
-
-    // if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-    //   throw new ApiError(400, "Invalid card ID")
-    // }
 
     const card = await Card.findById(id)
     if (!card) throw new ApiError(404, "Card not found")
@@ -185,8 +178,7 @@ export const updateCard = asyncHandler(
       }
 
       imagesUpdate.primaryImageKey = primaryImageKey
-      imagesUpdate.primaryImage = generateSignedUrl(primaryImageKey)
-      imagesUpdate.primaryUrlExpiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000)
+      imagesUpdate.primaryImage = `${process.env.CLOUDFRONT_URL}/${primaryImageKey}`
     }
 
     if (secondaryImageKey) {
@@ -197,8 +189,7 @@ export const updateCard = asyncHandler(
       }
 
       imagesUpdate.secondaryImageKey = secondaryImageKey
-      imagesUpdate.secondaryImage = generateSignedUrl(secondaryImageKey)
-      imagesUpdate.secondaryUrlExpiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000)
+      imagesUpdate.secondaryImage = `${process.env.CLOUDFRONT_URL}/${secondaryImageKey}`
     }
 
     updateData.images = imagesUpdate
@@ -220,7 +211,7 @@ export const getCardById = asyncHandler(
 
     if (!card) throw new ApiError(404, "Card not found")
 
-    const updated = refreshSignedUrlsIfNeeded(card)
+    const updated:any = attachCloudfrontUrls(card)
     if (updated) await card.save()
 
     res.status(200).json(new ApiResponse(200, card, "Card fetched successfully"))
@@ -265,7 +256,7 @@ export const getPopularCards = asyncHandler(
 
     let updated = false
     for (const c of cards) {
-      if (refreshSignedUrlsIfNeeded(c)) updated = true
+      if (attachCloudfrontUrls(c)) updated = true
     }
 
     if (updated) await Promise.all(cards.map((c) => c.save()))
@@ -288,7 +279,7 @@ export const getTrendingCards = asyncHandler(
 
     let updated = false
     for (const c of cards) {
-      if (refreshSignedUrlsIfNeeded(c)) updated = true
+      if (attachCloudfrontUrls(c)) updated = true
     }
 
     if (updated) await Promise.all(cards.map((c) => c.save()))
@@ -332,7 +323,7 @@ export const getAllCards = asyncHandler(
 
     let updated = false
     for (const c of cards) {
-      if (refreshSignedUrlsIfNeeded(c)) updated = true
+      if (attachCloudfrontUrls(c)) updated = true
     }
 
     if (updated) await Promise.all(cards.map((c) => c.save()))

@@ -3,7 +3,7 @@ import ApiError from "../../utils/apiError.js"
 import asyncHandler from "../../utils/asyncHandler.js"
 import { Event } from "../../models/event.model.js"
 import ApiResponse from "../../utils/apiResponse.js"
-import { generateSignedUrl, deleteFromS3 } from "../../utils/awsS3.js"
+import { deleteFromS3 } from "../../utils/awsS3.js"
 
 interface CreateEventBody {
   eventName: string
@@ -49,7 +49,7 @@ const getAllEvents = asyncHandler(
     const formatted = events.map((event: any) => ({
       ...event,
       mediaUrl: event.eventMediaKey
-        ? generateSignedUrl(event.eventMediaKey)
+        ? `${process.env.CLOUDFRONT_URL}/${event.eventMediaKey}`
         : null
     }))
 
@@ -86,10 +86,7 @@ const deleteEvent = asyncHandler(
 )
 
 const updateEvent = asyncHandler(
-  async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const { eventId } = req.params
     const { eventName, mediaKey, mediaType, link } = req.body
 
@@ -118,7 +115,9 @@ const updateEvent = asyncHandler(
 
     const formattedEvent = {
       ...event.toObject(),
-      mediaUrl: generateSignedUrl(event.eventMediaKey)
+      mediaUrl: event.eventMediaKey
+        ? `${process.env.CLOUDFRONT_URL}/${event.eventMediaKey}`
+        : null
     }
 
     res
