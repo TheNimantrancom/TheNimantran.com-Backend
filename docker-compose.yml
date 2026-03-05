@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   backend:
-    image: nimantran/nimantranbackend:latest
+    image: ${DOCKERHUB_USERNAME}/nimantranbackend:latest
     container_name: nimantran-backend
     restart: always
     ports:
@@ -13,7 +13,7 @@ services:
       mongo:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/check/health"]
       interval: 30s
@@ -32,11 +32,9 @@ services:
     restart: always
     volumes:
       - mongo_data:/data/db
-    ports:
-      - "27018:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: nim
-      MONGO_INITDB_ROOT_PASSWORD: nimpass
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 30s
@@ -53,11 +51,15 @@ services:
     image: redis:7.2-alpine
     container_name: nimantran-redis
     restart: always
-    ports:
-      - "6380:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     logging:
       driver: json-file
       options:
