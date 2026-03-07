@@ -12,6 +12,7 @@ const __dirname: string = path.dirname(__filename)
 const startServer = async (): Promise<void> => {
   try {
     await connectDB()
+    
     app.listen(PORT, (): void => {
       console.log(`HTTPS Server running on http://localhost:${PORT}`)
     })
