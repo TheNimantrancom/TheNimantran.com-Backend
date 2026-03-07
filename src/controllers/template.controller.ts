@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import Template from '../models/template.model.js';
+import asyncHandler from "../utils/asyncHandler.js"
 
-export const createTemplate = async (req: Request, res: Response): Promise<void> => {
+export const createTemplate = asyncHandler( async (req: Request, res: Response): Promise<void> => {
   try {
 
     const { name, category, width, height, dpi, tags, backgroundImage } = req.body
@@ -66,7 +67,7 @@ if (!allowedCategories.includes(normalizedCategory)) {
       message: "Failed to create template"
     })
   }
-}
+})
 
 // GET /api/templates - List all active templates
 export const getTemplates = async (req: Request, res: Response): Promise<void> => {

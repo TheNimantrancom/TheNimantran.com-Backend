@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import fs from 'fs';
-import sharp from 'sharp';
+// import sharp from 'sharp';
 import path from 'path';
 
 console.log("Key at init:", process.env.ANTHROPIC_API_KEY);
@@ -38,131 +38,131 @@ const callGemini = async (prompt: string): Promise<string> => {
   return text;
 };
 // ─── AI Image Generation via Hugging Face (Free) ────────────────────────────
-export const generateImage = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { prompt, width = 512, height = 512, style = 'realistic' } = req.body;
+// export const generateImage = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { prompt, width = 512, height = 512, style = 'realistic' } = req.body;
 
-    if (!prompt) {
-      res.status(400).json({ error: 'Prompt is required' });
-      return;
-    }
+//     if (!prompt) {
+//       res.status(400).json({ error: 'Prompt is required' });
+//       return;
+//     }
 
-    const stylePrompts: Record<string, string> = {
-      realistic: 'photorealistic, high quality, 8k, detailed',
-      illustration: 'digital illustration, vector art style, clean lines, vibrant colors',
-      watercolor: 'watercolor painting, soft edges, artistic, beautiful',
-      'flat-design': 'flat design, minimal, simple shapes, professional',
-      vintage: 'vintage retro style, aged, classic, nostalgic',
-      '3d-render': '3D render, blender, octane render, high quality',
-      abstract: 'abstract art, geometric shapes, modern art',
-      sketch: 'pencil sketch, hand drawn, artistic, line art',
-    };
+//     const stylePrompts: Record<string, string> = {
+//       realistic: 'photorealistic, high quality, 8k, detailed',
+//       illustration: 'digital illustration, vector art style, clean lines, vibrant colors',
+//       watercolor: 'watercolor painting, soft edges, artistic, beautiful',
+//       'flat-design': 'flat design, minimal, simple shapes, professional',
+//       vintage: 'vintage retro style, aged, classic, nostalgic',
+//       '3d-render': '3D render, blender, octane render, high quality',
+//       abstract: 'abstract art, geometric shapes, modern art',
+//       sketch: 'pencil sketch, hand drawn, artistic, line art',
+//     };
 
-    const enhancedPrompt = `${prompt}, ${stylePrompts[style] || stylePrompts.realistic}, no text, no watermark`;
+//     const enhancedPrompt = `${prompt}, ${stylePrompts[style] || stylePrompts.realistic}, no text, no watermark`;
 
-    const HF_API_URL =
-      'https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0';
+//     const HF_API_URL =
+//       'https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0';
 
-    const response = await fetch(HF_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: enhancedPrompt,
-        parameters: {
-          width: Math.min(width, 1024),
-          height: Math.min(height, 1024),
-          num_inference_steps: 30,
-          guidance_scale: 7.5,
-        },
-      }),
-    });
+//     const response = await fetch(HF_API_URL, {
+//       method: 'POST',
+//       headers: {
+//         Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         inputs: enhancedPrompt,
+//         parameters: {
+//           width: Math.min(width, 1024),
+//           height: Math.min(height, 1024),
+//           num_inference_steps: 30,
+//           guidance_scale: 7.5,
+//         },
+//       }),
+//     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
+//     if (!response.ok) {
+//       const errorText = await response.text();
 
-      if (response.status === 503) {
-        res.status(503).json({
-          error: 'AI model is warming up. Please try again in 20 seconds.',
-          retryAfter: 20,
-        });
-        return;
-      }
+//       if (response.status === 503) {
+//         res.status(503).json({
+//           error: 'AI model is warming up. Please try again in 20 seconds.',
+//           retryAfter: 20,
+//         });
+//         return;
+//       }
 
-      throw new Error(`HF API error: ${errorText}`);
-    }
+//       throw new Error(`HF API error: ${errorText}`);
+//     }
 
-    const imageBuffer = Buffer.from(await response.arrayBuffer());
+//     const imageBuffer = Buffer.from(await response.arrayBuffer());
 
-    const filename = `ai-gen-${Date.now()}.png`;
-    const filepath = path.join(__dirname, '../../uploads', filename);
+//     const filename = `ai-gen-${Date.now()}.png`;
+//     const filepath = path.join(__dirname, '../../uploads', filename);
 
-    await sharp(imageBuffer).png().toFile(filepath);
+//     await sharp(imageBuffer).png().toFile(filepath);
 
-    res.json({
-      success: true,
-      imageUrl: `/uploads/${filename}`,
-      prompt: enhancedPrompt,
-    });
-  } catch (error) {
-    console.error('generateImage error:', error);
-    res.status(500).json({ error: 'Image generation failed', details: String(error) });
-  }
-};
+//     res.json({
+//       success: true,
+//       imageUrl: `/uploads/${filename}`,
+//       prompt: enhancedPrompt,
+//     });
+//   } catch (error) {
+//     console.error('generateImage error:', error);
+//     res.status(500).json({ error: 'Image generation failed', details: String(error) });
+//   }
+// };
 
 // ─── AI Background Removal (Server-side using Remove.bg OR Sharp) ─────────────
-export const removeBackground = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.file) {
-      res.status(400).json({ error: 'Image file is required' });
-      return;
-    }
+// export const removeBackground = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     if (!req.file) {
+//       res.status(400).json({ error: 'Image file is required' });
+//       return;
+//     }
 
-    const inputPath = req.file.path;
-    const outputFilename = `nobg-${Date.now()}.png`;
-    const outputPath = path.join(__dirname, '../../uploads', outputFilename);
+//     const inputPath = req.file.path;
+//     const outputFilename = `nobg-${Date.now()}.png`;
+//     const outputPath = path.join(__dirname, '../../uploads', outputFilename);
 
-    // Option 1: Use Remove.bg API (best quality, needs API key)
-    if (process.env.REMOVEBG_API_KEY) {
-      const formData = new FormData();
-      formData.append('image_file', fs.createReadStream(inputPath));
-      formData.append('size', 'auto');
+//     // Option 1: Use Remove.bg API (best quality, needs API key)
+//     if (process.env.REMOVEBG_API_KEY) {
+//       const formData = new FormData();
+//       formData.append('image_file', fs.createReadStream(inputPath));
+//       formData.append('size', 'auto');
 
-      const response = await fetch('https://api.remove.bg/v1.0/removebg', {
-        method: 'POST',
-        headers: { 'X-Api-Key': process.env.REMOVEBG_API_KEY },
-        body: formData,
-      });
+//       const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+//         method: 'POST',
+//         headers: { 'X-Api-Key': process.env.REMOVEBG_API_KEY },
+//         body: formData,
+//       });
 
-      if (response.ok) {
-        const buffer = await response.buffer();
-        fs.writeFileSync(outputPath, buffer);
-        fs.unlinkSync(inputPath);
-        res.json({ success: true, imageUrl: `/uploads/${outputFilename}` });
-        return;
-      }
-    }
+//       if (response.ok) {
+//         const buffer = await response.buffer();
+//         fs.writeFileSync(outputPath, buffer);
+//         fs.unlinkSync(inputPath);
+//         res.json({ success: true, imageUrl: `/uploads/${outputFilename}` });
+//         return;
+//       }
+//     }
 
-    // Option 2: Fallback - use Sharp for basic processing
-    // Note: True AI background removal requires ML model. 
-    // For production, use @imgly/background-removal on frontend (browser-based, free)
-    await sharp(inputPath)
-      .png()
-      .toFile(outputPath);
+//     // Option 2: Fallback - use Sharp for basic processing
+//     // Note: True AI background removal requires ML model. 
+//     // For production, use @imgly/background-removal on frontend (browser-based, free)
+//     await sharp(inputPath)
+//       .png()
+//       .toFile(outputPath);
 
-    fs.unlinkSync(inputPath);
-    res.json({
-      success: true,
-      imageUrl: `/uploads/${outputFilename}`,
-      note: 'For best background removal, the browser-side AI tool is used automatically'
-    });
-  } catch (error) {
-    console.error('removeBackground error:', error);
-    res.status(500).json({ error: 'Background removal failed' });
-  }
-};
+//     fs.unlinkSync(inputPath);
+//     res.json({
+//       success: true,
+//       imageUrl: `/uploads/${outputFilename}`,
+//       note: 'For best background removal, the browser-side AI tool is used automatically'
+//     });
+//   } catch (error) {
+//     console.error('removeBackground error:', error);
+//     res.status(500).json({ error: 'Background removal failed' });
+//   }
+// };
 interface GeminiResponse {
   candidates: {
     content: {

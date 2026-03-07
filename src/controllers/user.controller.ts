@@ -70,10 +70,10 @@ const registerUserSchema = z.object({
     .email("Invalid email address")
     .min(5, "Email should be at least 5 characters long")
     .max(50, "Email too large"),
-  phoneNumber: z
+  phone: z
     .string()
     .min(10, "Phone number must be at least 10 digits")
-    .optional(),
+  ,
   password: z
     .string()
     .regex(
@@ -86,18 +86,18 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
    console.log("Yes the backend api is hitted");
 
   const validatedData = registerUserSchema.parse(req.body);
-  let { name, email, password } = validatedData;
+  let { name, email, password ,phone} = validatedData;
 
   email = email.toLowerCase().trim();
 
   const existingUser = await User.findOne({
-    email
+    $or: [{ email },{phone}],
   })
     .select("_id isEmailVerified")
     .lean();
 
-  if (existingUser?.isEmailVerified) {
-    throw new ApiError(400, "User with this email or username already exists");
+  if (existingUser?.isEmailVerified || existingUser?.phone === phone) {
+    throw new ApiError(400, "User with this email or phone number already exists");
   }
 
   if (existingUser && !existingUser.isEmailVerified) {
@@ -109,6 +109,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     name,
     email,
     password,
+    phone
   
   });
 
@@ -117,6 +118,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     name: user.name,
     email: user.email,
     isEmailVerified: user.isEmailVerified,
+    phone: user.phone
 
   };
 
@@ -148,7 +150,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
 
      const user = await User.findOne(query).select("+password")
 
-    if (!user) throw new ApiError(404, "User not found")
+    if (!user) throw new ApiError(404, "Invalid email or password")
 
     if (!user.password) {
       throw new ApiError(400, "Try Login with Google")
