@@ -10,6 +10,6 @@ router.post('/', createTemplate);
 router.get('/', getTemplates);
 router.get('/:id', getTemplateById);
 router.delete('/:id', deleteTemplate);
-router.post("/remove-bg",removeBg)
+// router.post("/remove-bg",removeBg)
 
 export default router;
