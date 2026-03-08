@@ -60,7 +60,7 @@ router.get(
 
 router.get(
   "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "https://thenimantran.com/login" ,session:false}),
+  passport.authenticate("google", { failureRedirect: "https://thenimantran.com/Auth" ,session:false}),
   googleCallbackLogin
 );
 

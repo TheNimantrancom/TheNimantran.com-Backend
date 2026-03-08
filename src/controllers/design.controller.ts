@@ -25,14 +25,14 @@ export const saveDesign = async (req: Request, res: Response): Promise<void> => 
     let design;
 
     if (designId) {
-      // Update existing design
+   console.log("Finding new design")
       design = await Design.findByIdAndUpdate(
         designId,
         { name: name || 'Untitled Design', canvasJSON, previewImage, status: 'saved', updatedAt: new Date() },
         { new: true }
       );
     } else {
-      // Create new design
+       console.log("Creating new design")
       design = new Design({
         templateId,
         userId,

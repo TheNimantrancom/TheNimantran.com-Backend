@@ -198,6 +198,7 @@ export const googleCallbackLogin = asyncHandler(
         name: googleUser.name,
         email: googleUser.email,
         picture: googleUser.picture,
+        phone:googleUser.phone,
         roles: ["user"],
         wholesalerStatus: "none",
         isVerified: true,
