@@ -73,7 +73,7 @@ export const getUserDesigns = async (req: Request, res: Response): Promise<void>
     throw new ApiError(401, "Unauthorized");
   }
 
-    const { userId } = req.user._id as any;
+    const  userId  = req.user._id as any;
     if (!userId) {
       res.status(400).json({ error: 'userId is required' });
       return;
