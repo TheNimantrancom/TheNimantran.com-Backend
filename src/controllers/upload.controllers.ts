@@ -12,6 +12,7 @@ import {
 interface PresignBody {
   fileName: string
   fileType: string
+  folder?:string
 }
 
 /* =========================
@@ -23,7 +24,7 @@ export const getPresignedUploadUrl = async (
   res: Response
 ): Promise<Response> => {
   try {
-    const { fileName, fileType } =
+    let { fileName, fileType,folder } =
       req.body as PresignBody
 
     if (!fileName || !fileType) {
@@ -32,10 +33,15 @@ export const getPresignedUploadUrl = async (
           "fileName and fileType required",
       })
     }
+    if(!folder)
+    {
+      folder = "uploads"
+    }
 
     const result = await generatePresignedUploadUrl(
       fileName,
-      fileType
+      fileType,
+      folder
     )
 
     return res.status(200).json({
