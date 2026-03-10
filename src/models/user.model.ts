@@ -52,6 +52,18 @@ const userSchema = new Schema<IUser>(
       default: ["user"],
       enum: ROLES,
     },
+       location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number],
+        default: [0, 0],
+      },
+      updatedAt: { type: Date },
+    },
 
     wholesalerStatus: {
       type: String,
