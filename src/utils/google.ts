@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const GOOGLE_KEY = process.env.GOOGLE_KEY;
 
 if (!GOOGLE_KEY) {
   console.warn(
@@ -49,8 +49,18 @@ export const reverseGeocode = async (
   lng: number
 ): Promise<GoogleGeocodeResponse> => {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_KEY}`;
-  const { data } = await axios.get<GoogleGeocodeResponse>(url);
-  return data;
+
+    console.log("Yes i am just going to work")
+    let data:any;
+    try {
+         data= await axios.get<GoogleGeocodeResponse>(url);
+    } catch (error) {
+      console.log("Error location",error)
+    }
+
+  console.log("Issue")
+  console.log(data)
+  return data.data;
 };
 
 export const getDirections = async (

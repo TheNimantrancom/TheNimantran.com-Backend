@@ -1,15 +1,16 @@
 import express from "express";
-
-
-import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { getDirections, reverseGeocode, updateLocation } from "../controllers/location.cotroller.js";
+import {
+  updateLocation,
+  checkServiceAvailability,
+} from "../controllers/location.cotroller.js";
+import { getNearestWarehouse } from "../controllers/warehouse.controller.js";
 
 const router = express.Router();
 
-router.use(verifyJWT);
-
 router.post("/update", updateLocation);
-router.get("/reverse-geocode", reverseGeocode);
-router.get("/directions", getDirections);
+
+router.get("/check-service", checkServiceAvailability);
+router.get("/nearest-warehouse",getNearestWarehouse)
+
 
 export default router;
