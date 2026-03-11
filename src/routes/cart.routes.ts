@@ -7,14 +7,14 @@ import {
   emptyCart,
   totalCartAmount
 } from "../controllers/cart.controller.js";
-
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
-router.post("/add", addToCart);
-router.get("/", getCartCards);
-router.get("/total", totalCartAmount);
-router.patch("/update/:cardId", updateCartCardQuantity);
-router.delete("/remove/:cardId", removeCartCard);
-router.delete("/empty", emptyCart);
+router.post("/add",verifyJWT, addToCart);
+router.get("/",verifyJWT, getCartCards);
+router.get("/total",verifyJWT, totalCartAmount);
+router.patch("/update/:cardId",verifyJWT, updateCartCardQuantity);
+router.delete("/remove/:cardId",verifyJWT,removeCartCard);
+router.delete("/empty",verifyJWT, emptyCart);
 
 export default router;
