@@ -2,14 +2,12 @@ import { Request, Response } from "express"
 import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/apiError.js"
 import ApiResponse from "../utils/apiResponse.js"
-import Order, {
-  IOrder,
-  OrderStatus,
-  PaymentMethod,
-} from "../models/order.model.js"
+import { Order, IOrder, OrderStatus, PaymentMethod } from "../models/order.model.js"
 import { v4 as uuidv4 } from "uuid"
 import { Card } from "../models/card.model.js"
 import { ICard } from "../types/models/card.types.js"
+import { findNearestWarehouse, findNearestWarehouses } from "../services/warhouse.service.js"
+import { getIO } from "../index.js"
 
 
 
@@ -18,11 +16,40 @@ interface CreateOrderItemInput {
   quantity: number
 }
 
+interface ShippingAddress {
+  lat: number
+  lng: number
+  line1?: string
+  line2?: string
+  city?: string
+  state?: string
+  pincode?: string
+  [key: string]: unknown
+}
+
+
+
+const dispatchToWarehouse = (warehouseId: string, order: IOrder) => {
+  try {
+    const io = getIO()
+    io.to(warehouseId).emit("NEW_ORDER", {
+      orderId: order.orderId,
+      _id: order._id,
+      items: order.items,
+      finalAmount: order.finalAmount,
+      shippingAddress: order.shippingAddress,
+      createdAt: order.createdAt,
+    })
+  } catch (err) {
+    console.error("[Socket] Failed to emit NEW_ORDER:", err)
+  }
+}
+
+
+
 export const createOrder = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
-    if (!req.user) {
-      throw new ApiError(401, "Unauthorized")
-    }
+    if (!req.user) throw new ApiError(401, "Unauthorized")
 
     const user = req.user
     const userId = user._id
@@ -34,49 +61,52 @@ export const createOrder = asyncHandler(
     }: {
       items: CreateOrderItemInput[]
       paymentMethod: PaymentMethod
-      shippingAddress: unknown
+      shippingAddress: ShippingAddress
     } = req.body
 
     if (!items || items.length === 0) {
+      throw new ApiError(400, "Order items are required")
+    }
+
+
+    const { lat, lng } = shippingAddress ?? {}
+
+    if (!lat || !lng) {
+      throw new ApiError(400, "Shipping address must include lat and lng coordinates")
+    }
+
+    const nearestWarehouse = await findNearestWarehouse(lat, lng)
+
+    if (!nearestWarehouse) {
       throw new ApiError(
         400,
-        "Order items are required"
+        "No active warehouse services your delivery area at the moment. Please try again later."
       )
     }
+
 
     let totalAmount = 0
     let discount = 0
 
     const populatedItems = await Promise.all(
       items.map(async (item) => {
-        const card: ICard | null =
-          await Card.findById(item.cardId)
+        const card: ICard | null = await Card.findById(item.cardId)
 
-        if (!card) {
-          throw new ApiError(
-            404,
-            "Card not found"
-          )
-        }
+        if (!card) throw new ApiError(404, `Card ${item.cardId} not found`)
 
         const isWholesale =
-          user.wholesalerStatus === "approved" &&
-          card.isAvailableForWholesale
+          user.wholesalerStatus === "approved" && card.isAvailableForWholesale
 
         const packSize = isWholesale
           ? card.quantityPerBundleWholesale
           : card.quantityPerBundleCustomer
 
-        const pricePerPack = isWholesale
-          ? card.wholesalePrice
-          : card.price
-
+        const pricePerPack = isWholesale ? card.wholesalePrice : card.price
         const discountPerPack = isWholesale
           ? card.wholesaleDiscount || 0
           : card.discount || 0
 
         const packs = Number(item.quantity)
-
         const itemTotal = packs * pricePerPack
         const itemDiscount = packs * discountPerPack
 
@@ -99,33 +129,13 @@ export const createOrder = asyncHandler(
       })
     )
 
-    const deliveryThreshold =
-      user.wholesalerStatus === "approved"
-        ? 2000
-        : 200
-
-    const taxableAmount = Math.max(
-      totalAmount - discount,
-      0
-    )
-
-    const shippingFee =
-      taxableAmount >= deliveryThreshold
-        ? 0
-        : 40
-
+    const deliveryThreshold = user.wholesalerStatus === "approved" ? 2000 : 200
+    const taxableAmount = Math.max(totalAmount - discount, 0)
+    const shippingFee = taxableAmount >= deliveryThreshold ? 0 : 40
     const GST_RATE = 0.18
-    const gstAmount = Number(
-      (taxableAmount * GST_RATE).toFixed(2)
-    )
+    const gstAmount = Number((taxableAmount * GST_RATE).toFixed(2))
+    const finalAmount = Number((taxableAmount + shippingFee + gstAmount).toFixed(2))
 
-    const finalAmount = Number(
-      (
-        taxableAmount +
-        shippingFee +
-        gstAmount
-      ).toFixed(2)
-    )
 
     const order: IOrder = await Order.create({
       orderId: uuidv4(),
@@ -139,174 +149,118 @@ export const createOrder = asyncHandler(
       paymentMethod,
       shippingAddress,
       status: "pending",
-      statusHistory: [
-        { status: "pending", date: new Date() },
-      ],
+      statusHistory: [{ status: "pending", date: new Date() }],
+      warehouse: nearestWarehouse._id,
+      rejectedByWarehouses: [],
     })
 
+
+    dispatchToWarehouse(String(nearestWarehouse._id), order)
+
     return res.status(201).json(
-      new ApiResponse(
-        201,
-        order,
-        "Order created successfully"
-      )
+      new ApiResponse(201, order, "Order created successfully")
     )
   }
 )
 
-/* =========================
-   GET USER ORDERS
-========================= */
+
 
 export const getUserOrders = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
-    if (!req.user) {
-      throw new ApiError(401, "Unauthorized")
-    }
+    if (!req.user) throw new ApiError(401, "Unauthorized")
 
-    const orders = await Order.find({
-      user: req.user._id,
-    })
+    const orders = await Order.find({ user: req.user._id })
       .populate("items.cardId", "name price")
+      .populate("warehouse", "name city")
       .sort({ createdAt: -1 })
 
     return res.status(200).json(
-      new ApiResponse(
-        200,
-        orders,
-        "User orders fetched successfully"
-      )
+      new ApiResponse(200, orders, "User orders fetched successfully")
     )
   }
 )
 
-/* =========================
-   GET CERTAIN ORDER
-========================= */
 
-export const getCertainOrder =
-  asyncHandler(
-    async (
-      req: Request,
-      res: Response
-    ): Promise<Response> => {
-      const { orderId } = req.params
+export const getCertainOrder = asyncHandler(
+  async (req: Request, res: Response): Promise<Response> => {
+    const { orderId } = req.params
 
-      if (!orderId) {
-        throw new ApiError(
-          400,
-          "Order ID not provided"
-        )
-      }
+    if (!orderId) throw new ApiError(400, "Order ID not provided")
 
-      const order = await Order.findOne({
-        orderId,
-      }).populate({
+    const order = await Order.findOne({ orderId })
+      .populate({
         path: "items.cardId",
         select:
           "name price images.primaryImage categories discount wholesalePrice wholesaleDiscount quantityPerBundleWholesale quantityPerBundleCustomer",
       })
+      .populate("warehouse", "name city address contactPhone")
 
-      if (!order) {
-        throw new ApiError(
-          404,
-          "Order not found"
-        )
-      }
-
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          order,
-          "Order fetched successfully"
-        )
-      )
-    }
-  )
-
-/* =========================
-   CANCEL ORDER
-========================= */
-
-export const cancelOrder = asyncHandler(
-  async (req: Request, res: Response): Promise<Response> => {
-    if (!req.user) {
-      throw new ApiError(401, "Unauthorized")
-    }
-
-    const { id } = req.params
-
-    const order = await Order.findOne({
-      _id: id,
-      user: req.user._id,
-    })
-
-    if (!order) {
-      throw new ApiError(
-        404,
-        "Order not found or unauthorized"
-      )
-    }
-
-    if (order.status !== "pending") {
-      throw new ApiError(
-        400,
-        "Only pending orders can be cancelled"
-      )
-    }
-
-    order.status = "cancelled"
-    order.statusHistory.push({
-      status: "cancelled",
-      date: new Date(),
-    })
-
-    await order.save()
+    if (!order) throw new ApiError(404, "Order not found")
 
     return res.status(200).json(
-      new ApiResponse(
-        200,
-        order,
-        "Order cancelled successfully"
-      )
+      new ApiResponse(200, order, "Order fetched successfully")
     )
   }
 )
 
 
-export const updateOrderStatus =
-  asyncHandler(
-    async (
-      req: Request,
-      res: Response
-    ): Promise<Response> => {
-      const { id } = req.params
-      const { status }: { status: OrderStatus } =
-        req.body
+export const cancelOrder = asyncHandler(
+  async (req: Request, res: Response): Promise<Response> => {
+    if (!req.user) throw new ApiError(401, "Unauthorized")
 
-      const order = await Order.findById(id)
+    const { id } = req.params
 
-      if (!order) {
-        throw new ApiError(
-          404,
-          "Order not found"
-        )
-      }
+    const order = await Order.findOne({ _id: id, user: req.user._id })
 
-      order.status = status
-      order.statusHistory.push({
-        status,
-        date: new Date(),
-      })
+    if (!order) throw new ApiError(404, "Order not found or unauthorized")
 
-      await order.save()
-
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          order,
-          "Order status updated successfully"
-        )
-      )
+    if (order.status !== "pending") {
+      throw new ApiError(400, "Only pending orders can be cancelled")
     }
-  )
+
+    order.status = "cancelled"
+    order.statusHistory.push({ status: "cancelled", date: new Date() })
+    await order.save()
+
+    if (order.warehouse) {
+      try {
+        getIO().to(String(order.warehouse)).emit("ORDER_CANCELLED", {
+          orderId: order.orderId,
+          _id: order._id,
+        })
+      } catch (_) {}
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, order, "Order cancelled successfully")
+    )
+  }
+)
+
+
+
+export const updateOrderStatus = asyncHandler(
+  async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params
+    const { status, note }: { status: OrderStatus; note?: string } = req.body
+
+    const order = await Order.findById(id)
+    if (!order) throw new ApiError(404, "Order not found")
+
+    order.status = status
+    order.statusHistory.push({ status, date: new Date(), note })
+    await order.save()
+
+    try {
+      getIO().to(String(order.user)).emit("ORDER_STATUS_UPDATED", {
+        orderId: order.orderId,
+        status,
+        note,
+      })
+    } catch (_) {}
+
+    return res.status(200).json(
+      new ApiResponse(200, order, "Order status updated successfully")
+    )
+  }
+)

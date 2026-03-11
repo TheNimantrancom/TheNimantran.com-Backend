@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import Order, { IOrder } from "../models/order.model.js"
+import  {Order, IOrder } from "../models/order.model.js"
 import ApiError from "../utils/apiError.js"
 import asyncHandler from "../utils/asyncHandler.js"
 import { generateInvoice } from "../utils/invoiceGenerator.js"
@@ -20,7 +20,7 @@ export const downloadInvoice = asyncHandler(
     }
 
       
-    const order: IOrder | null =
+    const order : any =
       await Order.findOne({
         orderId: orderId,
         user: userId,
@@ -33,7 +33,7 @@ export const downloadInvoice = asyncHandler(
     }
 
     const invoiceBuffer: Buffer =
-      await generateInvoice(order)
+      await generateInvoice(order as any)
 
     res.setHeader(
       "Content-Disposition",

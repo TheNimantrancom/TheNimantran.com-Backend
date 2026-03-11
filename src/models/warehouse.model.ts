@@ -1,40 +1,63 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose"
 
-const warehouseSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
 
-  city: {
-    type: String,
-    required: true
-  },
 
+export interface IWarehouse extends Document {
+  _id: Types.ObjectId
+  name: string
+  city: string
+  address: string
   location: {
-    type: {
-      type: String,
-      enum: ["Point"],
-      required: true
+    type: "Point"
+    coordinates: [number, number] 
+  }
+  deliveryRadius: number
+  isActive: boolean
+  managerName?: string
+  contactEmail?: string
+  contactPhone?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+
+const WarehouseSchema = new Schema<IWarehouse>(
+  {
+    name: { type: String, required: true, trim: true },
+    city: { type: String, required: true, trim: true },
+    address: { type: String, required: true },
+
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        required: true,
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], 
+        required: true,
+      },
     },
 
-    coordinates: {
-      type: [Number],
-      required: true
-    }
+    deliveryRadius: {
+      type: Number,
+      required: true,
+      default: 10000,
+    },
+
+    isActive: { type: Boolean, default: true, index: true },
+
+    managerName: { type: String },
+    contactEmail: { type: String },
+    contactPhone: { type: String },
   },
+  { timestamps: true }
+)
 
-  deliveryRadius: {
-    type: Number,
-    default: 10000
-  },
 
-  active: {
-    type: Boolean,
-    default: true
-  }
-});
+WarehouseSchema.index({ location: "2dsphere" })
 
-warehouseSchema.index({ location: "2dsphere" });
-
-export const Warehouse = mongoose.model("Warehouse", warehouseSchema);
+export const Warehouse =
+  mongoose.models.Warehouse ||
+  mongoose.model<IWarehouse>("Warehouse", WarehouseSchema)

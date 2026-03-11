@@ -11,6 +11,7 @@ import passport from "passport"
 import adminRoutes from "./routes/admin/index.js"
 import allRouter from "./routes/index.js"
 import "./middlewares/passport.js"
+import { globalLimiter } from "./utils/limiter.js"
 
 const app: Application = express()
 
@@ -39,7 +40,7 @@ app.use(express.static("public"))
 
 app.use(cookieParser())
 app.use(passport.initialize())
-
+app.use(globalLimiter);
 app.use("/api", allRouter)
 app.use("/api", adminRoutes)
 

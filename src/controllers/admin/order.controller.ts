@@ -1,6 +1,6 @@
 import { Request, Response } from "express"
 import asyncHandler from "../../utils/asyncHandler.js"
-import Order from "../../models/order.model.js"
+import {Order} from "../../models/order.model.js"
 import ApiResponse from "../../utils/apiResponse.js"
 import ApiError from "../../utils/apiError.js"
 

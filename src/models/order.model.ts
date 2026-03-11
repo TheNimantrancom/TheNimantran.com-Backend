@@ -1,90 +1,51 @@
 import mongoose, {
-  Schema,
   Document,
-  Model,
+  Schema,
   Types,
 } from "mongoose"
 
-/* =========================
-   ENUM TYPES
-========================= */
+
 
 export type OrderStatus =
   | "pending"
-  | "confirmed"
+  | "accepted"
+  | "rejected"
+  | "processing"
   | "shipped"
   | "delivered"
   | "cancelled"
-  | "returned"
 
 export type PaymentMethod =
-  | "COD"
-  | "Credit Card"
-  | "UPI"
-  | "Net Banking"
+  | "cod"
+  | "online"
+  | "wallet"
 
-export type PaymentStatus =
-  | "pending"
-  | "paid"
-  | "failed"
-  | "refunded"
-
-export type PlacedBy =
-  | "user"
-  | "admin"
-  | "franchise"
-  | "retailer"
-
-/* =========================
-   SUB TYPES
-========================= */
 
 export interface IOrderItem {
   cardId: Types.ObjectId
   name: string
   categories: string[]
-  packSize?: number
-  pricePerPack?: number
-  discountPerPack?: number
-  totalPrice?: number
-  isWholesale?: boolean
-  specifications?: {
-    material?: string
-    dimensions?: string
-    printing?: string
-    weight?: string
-    color?: string
-    customizable?: boolean
-  }
+  packs: number
+  packSize: number
+  pricePerPack: number
+  discountPerPack: number
+  totalPrice: number
   image?: string
-  packs?: number
+  specifications?: Record<string, unknown>
+  isWholesale: boolean
 }
 
-export interface IShippingAddress {
-  name?: string
-  phone?: string
-  alternatePhone?: string
-  state?: string
-  city?: string
-  roadAreaColony?: string
-  pincode?: string
-  landmark?: string
-  typeOfAddress?: string
-}
-
-export interface IStatusHistory {
+export interface IStatusHistoryEntry {
   status: OrderStatus
   date: Date
+  note?: string
 }
 
-/* =========================
-   MAIN ORDER TYPE
-========================= */
+
 
 export interface IOrder extends Document {
   orderId: string
   user: Types.ObjectId
-  status: OrderStatus
   items: IOrderItem[]
 
   totalAmount: number
@@ -94,84 +55,64 @@ export interface IOrder extends Document {
   finalAmount: number
 
   paymentMethod: PaymentMethod
-  paymentStatus: PaymentStatus
-  transactionId?: string
+  shippingAddress: unknown
 
-  shippingAddress?: IShippingAddress
+  status: OrderStatus
+  statusHistory: IStatusHistoryEntry[]
 
-  deliveryPartner?: string
-  trackingId?: string
+  warehouse?: Types.ObjectId
 
-  placedBy: PlacedBy
-  franchiseId?: Types.ObjectId
-  orderNotes?: string
 
-  statusHistory: IStatusHistory[]
-
-  orderDate: Date
-  deliveryDate?: Date
+  rejectedByWarehouses: Types.ObjectId[]
 
   createdAt: Date
   updatedAt: Date
 }
 
-/* =========================
-   SCHEMA
-========================= */
 
-const orderSchema = new Schema<IOrder>(
+const OrderItemSchema = new Schema<IOrderItem>(
+  {
+    cardId: { type: Schema.Types.ObjectId, ref: "Card", required: true },
+    name: { type: String, required: true },
+    categories: [{ type: String }],
+    packs: { type: Number, required: true },
+    packSize: { type: Number, required: true },
+    pricePerPack: { type: Number, required: true },
+    discountPerPack: { type: Number, default: 0 },
+    totalPrice: { type: Number, required: true },
+    image: { type: String },
+    specifications: { type: Schema.Types.Mixed },
+    isWholesale: { type: Boolean, default: false },
+  },
+  { _id: false }
+)
+
+const StatusHistorySchema = new Schema<IStatusHistoryEntry>(
+  {
+    status: { type: String, required: true },
+    date: { type: Date, default: () => new Date() },
+    note: { type: String },
+  },
+  { _id: false }
+)
+
+const OrderSchema = new Schema<IOrder>(
   {
     orderId: {
       type: String,
-      unique: true,
       required: true,
+      unique: true,
       index: true,
     },
-
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
       index: true,
     },
+    items: { type: [OrderItemSchema], required: true },
 
-    status: {
-      type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "shipped",
-        "delivered",
-        "cancelled",
-        "returned",
-      ],
-      default: "pending",
-      index: true,
-    },
-
-    items: [
-      {
-        cardId: { type: Schema.Types.ObjectId, ref: "Card" },
-        name: String,
-        categories: [{ type: String }],
-        packSize: Number,
-        pricePerPack: Number,
-        discountPerPack: Number,
-        totalPrice: Number,
-        isWholesale: Boolean,
-        specifications: {
-          material: String,
-          dimensions: String,
-          printing: String,
-          weight: String,
-          color: String,
-          customizable: { type: Boolean, default: false },
-        },
-        image: String,
-        packs: Number,
-      },
-    ],
-
+    // Pricing
     totalAmount: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
@@ -180,74 +121,46 @@ const orderSchema = new Schema<IOrder>(
 
     paymentMethod: {
       type: String,
-      enum: ["COD", "Credit Card", "UPI", "Net Banking"],
+      enum: ["cod", "online", "wallet"],
       required: true,
     },
+    shippingAddress: { type: Schema.Types.Mixed, required: true },
 
-    paymentStatus: {
+    status: {
       type: String,
-      enum: ["pending", "paid", "failed", "refunded"],
+      enum: [
+        "pending",
+        "accepted",
+        "rejected",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ],
       default: "pending",
+      index: true,
     },
+    statusHistory: { type: [StatusHistorySchema], default: [] },
 
-    transactionId: { type: String, index: true },
-
-    shippingAddress: {
-      name: String,
-      phone: String,
-      alternatePhone: String,
-      state: String,
-      city: String,
-      roadAreaColony: String,
-      pincode: String,
-      landmark: String,
-      typeOfAddress: String,
-    },
-
-    deliveryPartner: String,
-    trackingId: String,
-
-    placedBy: {
-      type: String,
-      enum: ["user", "admin", "franchise", "retailer"],
-      default: "user",
-    },
-
-    franchiseId: {
+    warehouse: {
       type: Schema.Types.ObjectId,
-      ref: "Franchise",
+      ref: "Warehouse",
+      default: null,
     },
-
-    orderNotes: String,
-
-    statusHistory: [
+    rejectedByWarehouses: [
       {
-        status: String,
-        date: { type: Date, default: Date.now },
+        type: Schema.Types.ObjectId,
+        ref: "Warehouse",
       },
     ],
-
-    orderDate: { type: Date, default: Date.now },
-    deliveryDate: Date,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 )
 
-/* =========================
-   PRE-SAVE HOOK
-========================= */
+OrderSchema.index({ warehouse: 1, status: 1 })
 
-orderSchema.pre<IOrder>("save", function (next) {
-  if (this.isModified("status")) {
-    this.statusHistory.push({
-      status: this.status,
-      date: new Date(),
-    })
-  }
-  next()
-})
-
-const Order: Model<IOrder> =
-  mongoose.model<IOrder>("Order", orderSchema)
-
-export default Order
+export const Order =
+  mongoose.models.Order ||
+  mongoose.model<IOrder>("Order", OrderSchema)
