@@ -8,6 +8,7 @@ import templateRoutes from "./template.routes.js"
 import designRoutes from "./design.routes.js"
 import aiRoutes from "./ai.routes.js"
 import locationRoutes from "./location.routes.js"
+import cartRoutes from "./cart.routes.js";
 const router = Router();
 
 router.use("/admin", adminRoutes);
@@ -18,5 +19,6 @@ router.use("/payments",paymentRoutes)
 router.use("/templates",templateRoutes)
 router.use("/design",designRoutes);
 router.use("/ai",aiRoutes)
+router.use("/cart", cartRoutes);
 router.use("/location",locationRoutes)
 export default router;
