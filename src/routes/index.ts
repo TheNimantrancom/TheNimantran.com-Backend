@@ -24,5 +24,5 @@ router.use("/ai",aiRoutes)
 router.use("/cart", cartRoutes);
 router.use("/location",locationRoutes)
 router.use("/warehouse",warehouseRoutes)
-router.use("/orders".orderRoutes)
+router.use("/orders",orderRoutes)
 export default router;
