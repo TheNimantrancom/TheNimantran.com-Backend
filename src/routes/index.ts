@@ -10,6 +10,7 @@ import aiRoutes from "./ai.routes.js"
 import locationRoutes from "./location.routes.js"
 import cartRoutes from "./cart.routes.js";
 import warehouseRoutes from "./warehouse.routes.js"
+import orderRoutes from "./order.routes.js"
 const router = Router();
 
 router.use("/admin", adminRoutes);
@@ -23,4 +24,5 @@ router.use("/ai",aiRoutes)
 router.use("/cart", cartRoutes);
 router.use("/location",locationRoutes)
 router.use("/warehouse",warehouseRoutes)
+router.use("/orders".orderRoutes)
 export default router;
