@@ -3,7 +3,7 @@ import { connectDB } from "./dB/db.connect.js"
 import { createServer } from "http"
 import path from "path"
 import { fileURLToPath } from "url"
-import { initWarhouseSocket } from "./sockets/warhouse.socket.js"
+import { initWarehouseSocket } from "./sockets/warehouse.socket.js"
 import { Server } from "socket.io"
 import ApiError from "./utils/apiError.js"
 import jwt from "jsonwebtoken"
@@ -101,7 +101,7 @@ const initializeApplication = async (): Promise<void> => {
         throw new ApiError(500, "Server busy")
       }
 
-      initWarhouseSocket(socket, io)
+      initWarehouseSocket(socket, io)
 
       socket.on("disconnect", (reason) => {
         console.log(`Client disconnected: ${socket.id} Reason: ${reason}`)

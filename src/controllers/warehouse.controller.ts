@@ -3,7 +3,7 @@ import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/apiError.js"
 import ApiResponse from "../utils/apiResponse.js"
 import { Order } from "../models/order.model.js"
-import { findNearestWarehouses } from "../services/warhouse.service.js"
+import { findNearestWarehouses } from "../services/warehouse.service.js"
 import mongoose from "mongoose"
 import { getIO } from "../index.js"
 

@@ -6,7 +6,7 @@ import { Order, IOrder, OrderStatus, PaymentMethod } from "../models/order.model
 import { v4 as uuidv4 } from "uuid"
 import { Card } from "../models/card.model.js"
 import { ICard } from "../types/models/card.types.js"
-import { findNearestWarehouse, findNearestWarehouses } from "../services/warhouse.service.js"
+import { findNearestWarehouse, findNearestWarehouses } from "../services/warehouse.service.js"
 import { getIO } from "../index.js"
 
 

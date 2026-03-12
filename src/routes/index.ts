@@ -9,7 +9,7 @@ import designRoutes from "./design.routes.js"
 import aiRoutes from "./ai.routes.js"
 import locationRoutes from "./location.routes.js"
 import cartRoutes from "./cart.routes.js";
-import warhouseRoutes from "./warehouse.routes.js"
+import warehouseRoutes from "./warehouse.routes.js"
 const router = Router();
 
 router.use("/admin", adminRoutes);
@@ -22,5 +22,5 @@ router.use("/design",designRoutes);
 router.use("/ai",aiRoutes)
 router.use("/cart", cartRoutes);
 router.use("/location",locationRoutes)
-router.use("/warhouse",warhouseRoutes)
+router.use("/warehouse",warehouseRoutes)
 export default router;

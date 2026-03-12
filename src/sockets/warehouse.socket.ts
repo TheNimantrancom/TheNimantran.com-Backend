@@ -3,7 +3,7 @@ import { Server, Socket } from "socket.io"
 const warehouseSocketMap = new Map<string, string>()
 const userSocketMap = new Map<string, string>()
 
-export const initWarhouseSocket = (socket: Socket, io: Server) => {
+export const initWarehouseSocket = (socket: Socket, io: Server) => {
 
   console.log("[Socket] Started socket:", socket.id)
 
