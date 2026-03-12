@@ -16,7 +16,8 @@ import { Card } from "../models/card.model.js"
 import Design from "../models/design.model.js"
 import { findNearestWarehouse, findNearestWarehouses } from "../services/warehouse.service.js"
 import { getIO } from "../index.js"
-
+import {razorpay} from "../utils/razorpay.js"
+import crypto from "crypto"
 /* ================================================================== */
 /*  Constants                                                          */
 /* ================================================================== */
@@ -240,35 +241,43 @@ export const createRazorpayOrder = asyncHandler(
     if (!req.user) throw new ApiError(401, "Unauthorized")
 
     const { orderId } = req.params
+
     const order = await Order.findOne({ orderId, user: req.user._id })
 
     if (!order) throw new ApiError(404, "Order not found")
+
     if (order.paymentMethod !== "online") {
       throw new ApiError(400, "This order is not an online payment order")
     }
+
     if (order.paymentStatus === "paid") {
-      throw new ApiError(400, "Order is already paid")
+      throw new ApiError(400, "Order already paid")
     }
 
-    /**
-     * TODO: integrate Razorpay SDK here.
-     *
-     * import Razorpay from "razorpay"
-     * const rzp = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET })
-     * const rzpOrder = await rzp.orders.create({ amount: order.finalAmount * 100, currency: "INR", receipt: order.orderId })
-     *
-     * order.razorpay = { orderId: rzpOrder.id }
-     * await order.save()
-     *
-     * return res.status(200).json(new ApiResponse(200, {
-     *   razorpayOrderId: rzpOrder.id,
-     *   amount: rzpOrder.amount,
-     *   currency: rzpOrder.currency,
-     *   keyId: process.env.RAZORPAY_KEY_ID,
-     * }, "Razorpay order created"))
-     */
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(order.finalAmount * 100),
+      currency: "INR",
+      receipt: order.orderId,
+    })
 
-    throw new ApiError(501, "Razorpay integration not yet configured")
+    order.razorpay = {
+      orderId: razorpayOrder.id,
+    }
+
+    await order.save()
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          razorpayOrderId: razorpayOrder.id,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          keyId: process.env.RAZORPAY_KEY_ID,
+        },
+        "Razorpay order created"
+      )
+    )
   }
 )
 
@@ -282,45 +291,55 @@ export const verifyRazorpayPayment = asyncHandler(
     if (!req.user) throw new ApiError(401, "Unauthorized")
 
     const { orderId } = req.params
+
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-    }: {
-      razorpay_order_id: string
-      razorpay_payment_id: string
-      razorpay_signature: string
     } = req.body
 
     const order = await Order.findOne({ orderId, user: req.user._id })
+
     if (!order) throw new ApiError(404, "Order not found")
 
-    /**
-     * TODO: Razorpay HMAC signature verification.
-     *
-     * import crypto from "crypto"
-     * const body = razorpay_order_id + "|" + razorpay_payment_id
-     * const expectedSignature = crypto
-     *   .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-     *   .update(body)
-     *   .digest("hex")
-     *
-     * if (expectedSignature !== razorpay_signature) {
-     *   throw new ApiError(400, "Payment verification failed — invalid signature")
-     * }
-     *
-     * order.razorpay = { orderId: razorpay_order_id, paymentId: razorpay_payment_id, signature: razorpay_signature }
-     * order.paymentStatus = "paid"
-     * order.statusHistory.push({ status: order.status, date: new Date(), note: "Payment verified", updatedBy: "system" })
-     * await order.save()
-     *
-     * notifyCustomer(String(order.user), { orderId: order.orderId, event: "payment_verified" })
-     * dispatchToWarehouse(String(order.warehouse), order)
-     *
-     * return res.status(200).json(new ApiResponse(200, order, "Payment verified successfully"))
-     */
+    const body = razorpay_order_id + "|" + razorpay_payment_id
 
-    throw new ApiError(501, "Razorpay integration not yet configured")
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET as string)
+      .update(body)
+      .digest("hex")
+
+    if (expectedSignature !== razorpay_signature) {
+      throw new ApiError(400, "Invalid payment signature")
+    }
+
+    order.paymentStatus = "paid"
+
+    order.razorpay = {
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+    }
+
+    order.statusHistory.push({
+      status: order.status,
+      date: new Date(),
+      note: "Payment verified",
+      updatedBy: "system",
+    })
+
+    await order.save()
+
+    notifyCustomer(String(order.user), {
+      orderId: order.orderId,
+      event: "payment_verified",
+    })
+
+    dispatchToWarehouse(String(order.warehouse), order)
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, order, "Payment verified successfully"))
   }
 )
 
