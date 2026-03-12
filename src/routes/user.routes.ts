@@ -11,14 +11,7 @@ import {
 } from "../controllers/user.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import {
-  addToCart,
- emptyCart,
- getCartCards,
- removeCartCard,
-  totalCartAmount,
-  updateCartCardQuantity,
-} from "../controllers/cart.controller.js";
+
 
 import {
   createReview,
@@ -30,7 +23,6 @@ import { checkOtp, sendOTP } from "../controllers/verification.controller.js";
 import {
   cancelOrder,
   createOrder,
-  getCertainOrder,
   getUserOrders
 } from "../controllers/order.controller.js";
 
@@ -65,12 +57,7 @@ router.get(
 );
 
 
-router.post("/cart/addToCart", verifyJWT, addToCart);
-router.get("/cart/getCartCards", verifyJWT,getCartCards);
-router.delete("/cart/removeCartCard/:cardId", verifyJWT,removeCartCard);
-router.put("/cart/updateCartCardQuantity/:cardId", verifyJWT, updateCartCardQuantity);
-router.delete("/cart/emptyCart",verifyJWT,emptyCart)
-router.get("/cart/totalAmount",verifyJWT,totalCartAmount)
+
 
 router.post("/review/createReview", verifyJWT, createReview);
 router.put("/review/updateReview/:id", verifyJWT, updateReview);
@@ -88,7 +75,7 @@ router.post("/order/createOrder", verifyJWT, createOrder);
 router.get("/order/getUserOrders", verifyJWT, getUserOrders);
 
 router.put("/order/cancelOrder/:id", verifyJWT, cancelOrder);
-router.get("/order/getCertainOrder/:orderId",verifyJWT,getCertainOrder)    
+ 
 router.get(
   "/orders/:orderId/invoice",
   verifyJWT,
@@ -96,7 +83,6 @@ router.get(
 );
 
 
-// Address
 
 router.route("/addAddress").post(verifyJWT,addAddress)
 router.route("/getAllAddresses").get(verifyJWT,getAllAddresses)

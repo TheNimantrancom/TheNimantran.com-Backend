@@ -1,20 +1,23 @@
-import express from "express";
+import { Router } from "express"
 import {
+  getCart,
   addToCart,
-  getCartCards,
-  removeCartCard,
-  updateCartCardQuantity,
-  emptyCart,
-  totalCartAmount
-} from "../controllers/cart.controller.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
-const router = express.Router();
+  updateCartItem,
+  removeCartItem,
+  clearCart,
+  syncCartPrices,
+} from "../controllers/cart.controller.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js" 
 
-router.post("/add",verifyJWT, addToCart);
-router.get("/",verifyJWT, getCartCards);
-router.get("/total",verifyJWT, totalCartAmount);
-router.patch("/update/:cardId",verifyJWT, updateCartCardQuantity);
-router.delete("/remove/:cardId",verifyJWT,removeCartCard);
-router.delete("/empty",verifyJWT, emptyCart);
+const router = Router()
 
-export default router;
+router.use(verifyJWT)
+
+router.get("/", getCart)
+router.post("/add", addToCart)
+router.patch("/item/:itemId", updateCartItem)
+router.delete("/item/:itemId", removeCartItem)
+router.delete("/", clearCart)
+router.post("/sync", syncCartPrices)
+
+export default router

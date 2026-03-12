@@ -1,38 +1,38 @@
 import { Request, Response } from "express"
+import mongoose from "mongoose"
+import { v4 as uuidv4 } from "uuid"
 import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/apiError.js"
 import ApiResponse from "../utils/apiResponse.js"
-import { Order, IOrder, OrderStatus, PaymentMethod } from "../models/order.model.js"
-import { v4 as uuidv4 } from "uuid"
+import {
+  Order,
+  type IOrder,
+  type IOrderItem,
+  type OrderStatus,
+  type PaymentMethod,
+} from "../models/order.model.js"
+import { Cart } from "../models/cart.model.js"
 import { Card } from "../models/card.model.js"
-import { ICard } from "../types/models/card.types.js"
+import Design from "../models/design.model.js"
 import { findNearestWarehouse, findNearestWarehouses } from "../services/warehouse.service.js"
 import { getIO } from "../index.js"
 
+/* ================================================================== */
+/*  Constants                                                          */
+/* ================================================================== */
 
+const GST_RATE = 0.18
+const WHOLESALE_FREE_SHIPPING_THRESHOLD = 2000
+const RETAIL_FREE_SHIPPING_THRESHOLD = 200
+const SHIPPING_FEE = 40
 
-interface CreateOrderItemInput {
-  cardId: string
-  quantity: number
-}
+/* ================================================================== */
+/*  Helpers                                                            */
+/* ================================================================== */
 
-interface ShippingAddress {
-  lat: number
-  lng: number
-  line1?: string
-  line2?: string
-  city?: string
-  state?: string
-  pincode?: string
-  [key: string]: unknown
-}
-
-
-
-const dispatchToWarehouse = (warehouseId: string, order: IOrder) => {
+const dispatchToWarehouse = (warehouseId: string, order: IOrder): void => {
   try {
-    const io = getIO()
-    io.to(warehouseId).emit("NEW_ORDER", {
+    getIO().to(warehouseId).emit("NEW_ORDER", {
       orderId: order.orderId,
       _id: order._id,
       items: order.items,
@@ -45,155 +45,350 @@ const dispatchToWarehouse = (warehouseId: string, order: IOrder) => {
   }
 }
 
+const notifyCustomer = (userId: string, payload: object): void => {
+  try {
+    getIO().to(String(userId)).emit("ORDER_STATUS_UPDATED", payload)
+  } catch (_) {}
+}
 
+/**
+ * Converts a live cart item into an order item.
+ * Re-prices everything fresh from the DB — never trusts cart-cached prices.
+ */
+const resolveOrderItem = async (
+  cartItem: any,
+  isWholesale: boolean,
+  userId: string
+): Promise<IOrderItem> => {
+  // ── Catalog product ──────────────────────────────────────────────
+  if (cartItem.itemType === "product") {
+    const card = await Card.findById(cartItem.productId)
+    if (!card) {
+      throw new ApiError(404, `Product "${cartItem.name}" is no longer available`)
+    }
+
+    const eligible = isWholesale && card.isAvailableForWholesale
+    const unitPrice = eligible ? card.wholesalePrice : card.price
+    const discountPerUnit = eligible
+      ? card.wholesaleDiscount ?? 0
+      : card.discount ?? 0
+    const totalPrice = (unitPrice - discountPerUnit) * cartItem.quantity
+
+    return {
+      itemType: "product",
+      productId: card._id as mongoose.Types.ObjectId,
+      name: card.name,
+      category: Array.isArray(card.categories) ? card.categories[0] : "product",
+      previewImage: card.images?.primaryImage ?? "",
+      quantity: cartItem.quantity,
+      unitPrice,
+      discountPerUnit,
+      totalPrice,
+      specifications: cartItem.specifications ?? null,
+      isWholesale: eligible,
+    }
+  }
+
+  // ── Custom design ────────────────────────────────────────────────
+  const design = await Design.findById(cartItem.designId).populate("templateId")
+  if (!design) {
+    throw new ApiError(404, `Design "${cartItem.name}" no longer exists`)
+  }
+  if (String(design.userId) !== String(userId)) {
+    throw new ApiError(403, "You do not own this design")
+  }
+
+  const template = design.templateId as any
+  const unitPrice = template?.unitPrice ?? 0
+
+  return {
+    itemType: "design",
+    designId: design._id as mongoose.Types.ObjectId,
+    templateId: template?._id ?? null,
+    // Snapshot the canvas at order time so edits never affect production
+    canvasJSONSnapshot: design.canvasJSON as Record<string, unknown>,
+    name: design.name,
+    category: template?.category ?? "custom",
+    previewImage: design.previewImage ?? "",
+    quantity: cartItem.quantity,
+    unitPrice,
+    discountPerUnit: 0,
+    totalPrice: unitPrice * cartItem.quantity,
+    specifications: cartItem.specifications ?? null,
+    isWholesale: false,
+  }
+}
+
+/* ================================================================== */
+/*  CREATE ORDER FROM CART                                             */
+/*  POST /api/v1/orders                                                */
+/* ================================================================== */
 
 export const createOrder = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
     if (!req.user) throw new ApiError(401, "Unauthorized")
 
     const user = req.user
-    const userId = user._id
-
     const {
-      items,
       paymentMethod,
       shippingAddress,
     }: {
-      items: CreateOrderItemInput[]
       paymentMethod: PaymentMethod
-      shippingAddress: ShippingAddress
+      shippingAddress: {
+        lat?: number
+        lng?: number
+        line1: string
+        line2?: string
+        city: string
+        state: string
+        pincode: string
+      }
     } = req.body
 
-    if (!items || items.length === 0) {
-      throw new ApiError(400, "Order items are required")
+    if (!shippingAddress?.line1 || !shippingAddress?.city || !shippingAddress?.pincode) {
+      throw new ApiError(400, "shippingAddress with line1, city, and pincode is required")
     }
 
+    // ── 1. Validate cart ─────────────────────────────────────────────
+    const cart = await Cart.findOne({ user: user._id })
+    if (!cart || cart.items.length === 0) {
+      throw new ApiError(400, "Cart is empty")
+    }
 
-    const { lat, lng } = shippingAddress ?? {}
+    // ── 2. Warehouse lookup ──────────────────────────────────────────
+    const { lat, lng } = shippingAddress
 
     if (!lat || !lng) {
-      throw new ApiError(400, "Shipping address must include lat and lng coordinates")
-    }
-
-    const nearestWarehouse = await findNearestWarehouse(lat, lng)
-
-    if (!nearestWarehouse) {
       throw new ApiError(
         400,
-        "No active warehouse services your delivery area at the moment. Please try again later."
+        "shippingAddress must include lat and lng for delivery routing"
       )
     }
 
+    const nearestWarehouse = await findNearestWarehouse(lat, lng)
+    if (!nearestWarehouse) {
+      throw new ApiError(
+        400,
+        "No active warehouse services your delivery area. Please try again later."
+      )
+    }
 
-    let totalAmount = 0
-    let discount = 0
+    // ── 3. Re-price all items fresh from DB ──────────────────────────
+    const isWholesale = user.wholesalerStatus === "approved"
 
-    const populatedItems = await Promise.all(
-      items.map(async (item) => {
-        const card: ICard | null = await Card.findById(item.cardId)
-
-        if (!card) throw new ApiError(404, `Card ${item.cardId} not found`)
-
-        const isWholesale =
-          user.wholesalerStatus === "approved" && card.isAvailableForWholesale
-
-        const packSize = isWholesale
-          ? card.quantityPerBundleWholesale
-          : card.quantityPerBundleCustomer
-
-        const pricePerPack = isWholesale ? card.wholesalePrice : card.price
-        const discountPerPack = isWholesale
-          ? card.wholesaleDiscount || 0
-          : card.discount || 0
-
-        const packs = Number(item.quantity)
-        const itemTotal = packs * pricePerPack
-        const itemDiscount = packs * discountPerPack
-
-        totalAmount += itemTotal
-        discount += itemDiscount
-
-        return {
-          cardId: card._id,
-          name: card.name,
-          categories: card.categories,
-          packs,
-          packSize,
-          pricePerPack,
-          discountPerPack,
-          totalPrice: itemTotal,
-          image: card.images?.primaryImage,
-          specifications: card.specifications,
-          isWholesale,
-        }
-      })
+    const resolvedItems = await Promise.all(
+      cart.items.map((item:any) =>
+        resolveOrderItem(item, isWholesale, String(user._id))
+      )
     )
 
-    const deliveryThreshold = user.wholesalerStatus === "approved" ? 2000 : 200
-    const taxableAmount = Math.max(totalAmount - discount, 0)
-    const shippingFee = taxableAmount >= deliveryThreshold ? 0 : 40
-    const GST_RATE = 0.18
-    const gstAmount = Number((taxableAmount * GST_RATE).toFixed(2))
-    const finalAmount = Number((taxableAmount + shippingFee + gstAmount).toFixed(2))
+    // ── 4. Compute totals ────────────────────────────────────────────
+    const subtotal = resolvedItems.reduce((sum, i) => sum + i.totalPrice, 0)
+    const discount = resolvedItems.reduce(
+      (sum, i) => sum + i.discountPerUnit * i.quantity,
+      0
+    )
+    const taxableAmount = Math.max(subtotal - discount, 0)
 
+    const freeShippingThreshold = isWholesale
+      ? WHOLESALE_FREE_SHIPPING_THRESHOLD
+      : RETAIL_FREE_SHIPPING_THRESHOLD
 
+    const shippingFee = taxableAmount >= freeShippingThreshold ? 0 : SHIPPING_FEE
+    const tax = Number((taxableAmount * GST_RATE).toFixed(2))
+    const finalAmount = Number((taxableAmount + shippingFee + tax).toFixed(2))
+
+    // ── 5. Create order ──────────────────────────────────────────────
     const order: IOrder = await Order.create({
       orderId: uuidv4(),
-      user: userId,
-      items: populatedItems,
-      totalAmount,
+      user: user._id,
+      items: resolvedItems,
+      subtotal,
       discount,
-      tax: gstAmount,
+      tax,
       shippingFee,
       finalAmount,
       paymentMethod,
+      paymentStatus: paymentMethod === "online" ? "unpaid" : "unpaid", // Razorpay flow sets to "paid" after verification
       shippingAddress,
       status: "pending",
-      statusHistory: [{ status: "pending", date: new Date() }],
+      statusHistory: [{ status: "pending", date: new Date(), updatedBy: "system" }],
       warehouse: nearestWarehouse._id,
       rejectedByWarehouses: [],
     })
 
+    // ── 6. Clear cart after order is placed ─────────────────────────
+    cart.items = []
+    await cart.save()
 
+    // ── 7. Notify warehouse via socket ───────────────────────────────
     dispatchToWarehouse(String(nearestWarehouse._id), order)
 
     return res.status(201).json(
-      new ApiResponse(201, order, "Order created successfully")
+      new ApiResponse(201, order, "Order placed successfully")
     )
   }
 )
 
+/* ================================================================== */
+/*  CREATE RAZORPAY ORDER  (stub — wire in when Razorpay is added)    */
+/*  POST /api/v1/orders/:orderId/razorpay/create                       */
+/* ================================================================== */
 
+export const createRazorpayOrder = asyncHandler(
+  async (req: Request, res: Response): Promise<Response> => {
+    if (!req.user) throw new ApiError(401, "Unauthorized")
+
+    const { orderId } = req.params
+    const order = await Order.findOne({ orderId, user: req.user._id })
+
+    if (!order) throw new ApiError(404, "Order not found")
+    if (order.paymentMethod !== "online") {
+      throw new ApiError(400, "This order is not an online payment order")
+    }
+    if (order.paymentStatus === "paid") {
+      throw new ApiError(400, "Order is already paid")
+    }
+
+    /**
+     * TODO: integrate Razorpay SDK here.
+     *
+     * import Razorpay from "razorpay"
+     * const rzp = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET })
+     * const rzpOrder = await rzp.orders.create({ amount: order.finalAmount * 100, currency: "INR", receipt: order.orderId })
+     *
+     * order.razorpay = { orderId: rzpOrder.id }
+     * await order.save()
+     *
+     * return res.status(200).json(new ApiResponse(200, {
+     *   razorpayOrderId: rzpOrder.id,
+     *   amount: rzpOrder.amount,
+     *   currency: rzpOrder.currency,
+     *   keyId: process.env.RAZORPAY_KEY_ID,
+     * }, "Razorpay order created"))
+     */
+
+    throw new ApiError(501, "Razorpay integration not yet configured")
+  }
+)
+
+/* ================================================================== */
+/*  VERIFY RAZORPAY PAYMENT  (stub)                                    */
+/*  POST /api/v1/orders/:orderId/razorpay/verify                       */
+/* ================================================================== */
+
+export const verifyRazorpayPayment = asyncHandler(
+  async (req: Request, res: Response): Promise<Response> => {
+    if (!req.user) throw new ApiError(401, "Unauthorized")
+
+    const { orderId } = req.params
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    }: {
+      razorpay_order_id: string
+      razorpay_payment_id: string
+      razorpay_signature: string
+    } = req.body
+
+    const order = await Order.findOne({ orderId, user: req.user._id })
+    if (!order) throw new ApiError(404, "Order not found")
+
+    /**
+     * TODO: Razorpay HMAC signature verification.
+     *
+     * import crypto from "crypto"
+     * const body = razorpay_order_id + "|" + razorpay_payment_id
+     * const expectedSignature = crypto
+     *   .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+     *   .update(body)
+     *   .digest("hex")
+     *
+     * if (expectedSignature !== razorpay_signature) {
+     *   throw new ApiError(400, "Payment verification failed — invalid signature")
+     * }
+     *
+     * order.razorpay = { orderId: razorpay_order_id, paymentId: razorpay_payment_id, signature: razorpay_signature }
+     * order.paymentStatus = "paid"
+     * order.statusHistory.push({ status: order.status, date: new Date(), note: "Payment verified", updatedBy: "system" })
+     * await order.save()
+     *
+     * notifyCustomer(String(order.user), { orderId: order.orderId, event: "payment_verified" })
+     * dispatchToWarehouse(String(order.warehouse), order)
+     *
+     * return res.status(200).json(new ApiResponse(200, order, "Payment verified successfully"))
+     */
+
+    throw new ApiError(501, "Razorpay integration not yet configured")
+  }
+)
+
+/* ================================================================== */
+/*  GET USER ORDERS                                                    */
+/*  GET /api/v1/orders                                                 */
+/* ================================================================== */
 
 export const getUserOrders = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
     if (!req.user) throw new ApiError(401, "Unauthorized")
 
-    const orders = await Order.find({ user: req.user._id })
-      .populate("items.cardId", "name price")
-      .populate("warehouse", "name city")
-      .sort({ createdAt: -1 })
+    const { status, page = "1", limit = "10" } = req.query as {
+      status?: string
+      page?: string
+      limit?: string
+    }
+
+    const filter: Record<string, unknown> = { user: req.user._id }
+    if (status) filter.status = status
+
+    const pageNum = Math.max(parseInt(page, 10), 1)
+    const limitNum = Math.min(parseInt(limit, 10), 50)
+    const skip = (pageNum - 1) * limitNum
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .populate("warehouse", "name city"),
+      Order.countDocuments(filter),
+    ])
 
     return res.status(200).json(
-      new ApiResponse(200, orders, "User orders fetched successfully")
+      new ApiResponse(
+        200,
+        {
+          orders,
+          pagination: {
+            total,
+            page: pageNum,
+            limit: limitNum,
+            pages: Math.ceil(total / limitNum),
+          },
+        },
+        "Orders fetched successfully"
+      )
     )
   }
 )
 
+/* ================================================================== */
+/*  GET SINGLE ORDER                                                   */
+/*  GET /api/v1/orders/:orderId                                        */
+/* ================================================================== */
 
-export const getCertainOrder = asyncHandler(
+export const getOrder = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
+    if (!req.user) throw new ApiError(401, "Unauthorized")
+
     const { orderId } = req.params
 
-    if (!orderId) throw new ApiError(400, "Order ID not provided")
-
-    const order = await Order.findOne({ orderId })
-      .populate({
-        path: "items.cardId",
-        select:
-          "name price images.primaryImage categories discount wholesalePrice wholesaleDiscount quantityPerBundleWholesale quantityPerBundleCustomer",
-      })
+    const order = await Order.findOne({ orderId, user: req.user._id })
       .populate("warehouse", "name city address contactPhone")
+      .populate("items.productId", "name price images.primaryImage")
+      .populate("items.designId", "name previewImage")
+      .populate("items.templateId", "name category")
 
     if (!order) throw new ApiError(404, "Order not found")
 
@@ -203,25 +398,37 @@ export const getCertainOrder = asyncHandler(
   }
 )
 
+/* ================================================================== */
+/*  CANCEL ORDER                                                       */
+/*  PUT /api/v1/orders/:orderId/cancel                                 */
+/* ================================================================== */
 
 export const cancelOrder = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
     if (!req.user) throw new ApiError(401, "Unauthorized")
 
-    const { id } = req.params
+    const { orderId } = req.params
 
-    const order = await Order.findOne({ _id: id, user: req.user._id })
-
+    const order = await Order.findOne({ orderId, user: req.user._id })
     if (!order) throw new ApiError(404, "Order not found or unauthorized")
 
-    if (order.status !== "pending") {
-      throw new ApiError(400, "Only pending orders can be cancelled")
+    if (!["pending", "accepted"].includes(order.status)) {
+      throw new ApiError(
+        400,
+        `Cannot cancel an order with status "${order.status}"`
+      )
     }
 
     order.status = "cancelled"
-    order.statusHistory.push({ status: "cancelled", date: new Date() })
+    order.statusHistory.push({
+      status: "cancelled",
+      date: new Date(),
+      note: "Cancelled by customer",
+      updatedBy: String(req.user._id),
+    })
     await order.save()
 
+    // Notify warehouse to remove it from their queue
     if (order.warehouse) {
       try {
         getIO().to(String(order.warehouse)).emit("ORDER_CANCELLED", {
@@ -231,36 +438,71 @@ export const cancelOrder = asyncHandler(
       } catch (_) {}
     }
 
+    // TODO: initiate refund if paymentStatus === "paid"
+
     return res.status(200).json(
       new ApiResponse(200, order, "Order cancelled successfully")
     )
   }
 )
 
-
+/* ================================================================== */
+/*  UPDATE ORDER STATUS  (admin / warehouse)                           */
+/*  PUT /api/v1/orders/:orderId/status                                 */
+/* ================================================================== */
 
 export const updateOrderStatus = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
-    const { id } = req.params
-    const { status, note }: { status: OrderStatus; note?: string } = req.body
+    const { orderId } = req.params
+    const {
+      status,
+      note,
+    }: { status: OrderStatus; note?: string } = req.body
 
-    const order = await Order.findById(id)
+    const order = await Order.findOne({ orderId })
     if (!order) throw new ApiError(404, "Order not found")
 
+    const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+      pending: ["accepted", "rejected", "cancelled"],
+      accepted: ["processing", "cancelled"],
+      rejected: [],
+      processing: ["shipped"],
+      shipped: ["delivered"],
+      delivered: [],
+      cancelled: [],
+    }
+
+ if (!order) {
+  throw new ApiError(404, "Order not found")
+}
+
+const currentStatus = order.status as OrderStatus
+
+if (!VALID_TRANSITIONS[currentStatus].includes(status)) {
+  throw new ApiError(
+    400,
+    `Cannot transition from "${currentStatus}" to "${status}"`
+  )
+}
+
     order.status = status
-    order.statusHistory.push({ status, date: new Date(), note })
+    order.statusHistory.push({
+      status,
+      date: new Date(),
+      note,
+      updatedBy: "admin",
+    })
     await order.save()
 
-    try {
-      getIO().to(String(order.user)).emit("ORDER_STATUS_UPDATED", {
-        orderId: order.orderId,
-        status,
-        note,
-      })
-    } catch (_) {}
+    notifyCustomer(String(order.user), {
+      orderId: order.orderId,
+      status,
+      note,
+      message: `Your order status has been updated to: ${status}`,
+    })
 
     return res.status(200).json(
-      new ApiResponse(200, order, "Order status updated successfully")
+      new ApiResponse(200, order, "Order status updated")
     )
   }
 )
