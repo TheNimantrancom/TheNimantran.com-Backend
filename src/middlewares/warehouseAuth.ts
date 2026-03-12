@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.WAREHOUSE_JWT_SECRET || process.env.JWT_SECRET!
+const JWT_SECRET = process.env.WAREHOUSE_JWT_SECRET 
 
 export const verifyWarehouseToken = (
   req: Request,

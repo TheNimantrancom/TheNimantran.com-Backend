@@ -1,9 +1,7 @@
 import mongoose, { Document, Schema, Types } from "mongoose"
 import bcrypt from "bcryptjs"
 
-/* ------------------------------------------------------------------ */
-/*  Interface                                                           */
-/* ------------------------------------------------------------------ */
+
 
 export interface IWarehouse extends Document {
   _id: Types.ObjectId

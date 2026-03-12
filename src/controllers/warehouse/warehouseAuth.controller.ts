@@ -7,13 +7,17 @@ import { Warehouse, IWarehouse } from "../../models/warehouse.model.js"
 
 
 
-const JWT_SECRET = process.env.WAREHOUSE_JWT_SECRET || process.env.JWT_SECRET!
+const JWT_SECRET = process.env.WAREHOUSE_JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.WAREHOUSE_JWT_EXPIRES_IN || "7d"
 
+
 const signToken = (warehouseId: string): string =>
+
+ 
   jwt.sign({ warehouseId, role: "warehouse" }, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
   } as jwt.SignOptions)
+
 
 const cookieOptions = {
   httpOnly: true,
@@ -107,7 +111,7 @@ export const warehouseLogin = asyncHandler(
       throw new ApiError(400, "Email and password are required")
     }
 
-    // Explicitly select password because it has `select: false` in the schema
+  
     const warehouse = await Warehouse.findOne({
       contactEmail: email.toLowerCase(),
     }).select("+password")
