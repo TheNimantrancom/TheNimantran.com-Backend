@@ -1,16 +1,9 @@
 import { Request, Response } from 'express';
 import Template from '../models/template.model.js';
-import asyncHandler from "../utils/asyncHandler.js"
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
+import ApiResponse from "../utils/apiResponse.js";
 
-export const createTemplate = asyncHandler( async (req: Request, res: Response): Promise<void> => {
-  try {
-
-    const { name, category, width, height, dpi, tags, backgroundImage } = req.body
-
-    if (!name || !category) {
-      res.status(400).json({ success: false, message: "Name and category are required" })
-      return
-    }
 const allowedCategories = [
   "packaging box",
   "t-shirt",
@@ -18,105 +11,167 @@ const allowedCategories = [
   "flyer",
   "sticker",
   "other"
-]
+] as const;
 
-const normalizedCategory = category?.toLowerCase().trim()
+type AllowedCategory = typeof allowedCategories[number];
 
-if (!allowedCategories.includes(normalizedCategory)) {
-  throw new Error("Invalid category")
-}
-    if (!backgroundImage) {
-      res.status(400).json({ success: false, message: "Background image URL is required" })
-      return
-    }
+export const createTemplate = asyncHandler(async (req: Request, res: Response) => {
+  const { name, category, width, height, dpi, tags, backgroundImage } = req.body;
 
-    let parsedTags: string[] = []
+  // Validation
+  if (!name?.trim()) {
+    throw new ApiError(400, "Name is required");
+  }
 
-    if (tags) {
-      try {
-        const parsed = typeof tags === "string" ? JSON.parse(tags) : tags
-        if (Array.isArray(parsed)) {
-          parsedTags = parsed.map((t: string) => t.toLowerCase().trim())
-        }
-      } catch {
-        res.status(400).json({ success: false, message: "Invalid tags format" })
-        return
+  if (!category?.trim()) {
+    throw new ApiError(400, "Category is required");
+  }
+
+  const normalizedCategory = category.toLowerCase().trim();
+  if (!allowedCategories.includes(normalizedCategory as AllowedCategory)) {
+    throw new ApiError(400, "Invalid category");
+  }
+
+  if (!backgroundImage?.trim()) {
+    throw new ApiError(400, "Background image URL is required");
+  }
+
+  // Parse tags
+  let parsedTags: string[] = [];
+  if (tags) {
+    try {
+      const parsed = typeof tags === "string" ? JSON.parse(tags) : tags;
+      if (Array.isArray(parsed)) {
+        parsedTags = parsed.map((t: string) => t.toLowerCase().trim());
+      } else {
+        throw new ApiError(400, "Tags must be an array");
       }
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(400, "Invalid tags format");
     }
-
-    const template = await Template.create({
-      name: name.trim(),
-      category: category.toLowerCase().trim(),
-      backgroundImage,
-      thumbnailImage: backgroundImage,
-      width: Number(width) || 800,
-      height: Number(height) || 600,
-      dpi: Number(dpi) || 300,
-      tags: parsedTags
-    })
-
-    res.status(201).json({
-      success: true,
-      message: "Template created successfully",
-      data: template
-    })
-  } catch (error) {
-    console.error("createTemplate error:", error)
-    res.status(500).json({
-      success: false,
-      message: "Failed to create template"
-    })
   }
-})
 
-// GET /api/templates - List all active templates
-export const getTemplates = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { category, search } = req.query;
-    const query: Record<string, unknown> = { isActive: true };
+  // Create template
+  const template = await Template.create({
+    name: name.trim(),
+    category: normalizedCategory,
+    backgroundImage: backgroundImage.trim(),
+    thumbnailImage: backgroundImage.trim(),
+    width: Number(width) || 800,
+    height: Number(height) || 600,
+    dpi: Number(dpi) || 300,
+    tags: parsedTags,
+    isActive: true
+  });
 
-    if (category && category !== 'All') {
-      query.category = category;
-    }
-    if (search) {
-      query.name = { $regex: search, $options: 'i' };
-    }
+  res.status(201).json(
+    new ApiResponse(201, template, "Template created successfully")
+  );
+});
 
-    const templates = await Template.find(query).sort({ createdAt: -1 });
-    res.json({ success: true, data: templates, count: templates.length });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch templates' });
+export const getTemplates = asyncHandler(async (req: Request, res: Response) => {
+  const { category, search } = req.query;
+  const query: Record<string, unknown> = { isActive: true };
+
+  if (category && category !== 'All') {
+    query.category = category;
   }
-};
 
-// GET /api/templates/:id
-export const getTemplateById = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const template = await Template.findById(req.params.id);
-    if (!template) {
-      res.status(404).json({ error: 'Template not found' });
-      return;
-    }
-    res.json({ success: true, data: template });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch template' });
+  if (search && typeof search === 'string') {
+    query.name = { $regex: search, $options: 'i' };
   }
-};
 
-// DELETE /api/templates/:id
-export const deleteTemplate = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const template = await Template.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
-    if (!template) {
-      res.status(404).json({ error: 'Template not found' });
-      return;
-    }
-    res.json({ success: true, message: 'Template deleted' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete template' });
+  const templates = await Template.find(query).sort({ createdAt: -1 });
+
+  res.json(
+    new ApiResponse(200, { templates, count: templates.length }, "Templates fetched successfully")
+  );
+});
+
+export const getTemplateById = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const template = await Template.findOne({ _id: id, isActive: true });
+
+  if (!template) {
+    throw new ApiError(404, "Template not found");
   }
-};
+
+  res.json(
+    new ApiResponse(200, template, "Template fetched successfully")
+  );
+});
+
+export const deleteTemplate = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const template = await Template.findByIdAndUpdate(
+    id,
+    { isActive: false },
+    { new: true }
+  );
+
+  if (!template) {
+    throw new ApiError(404, "Template not found");
+  }
+
+  res.json(
+    new ApiResponse(200, null, "Template deleted successfully")
+  );
+});
+
+// Optional: Update template
+export const updateTemplate = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const updates = req.body;
+
+  // Validate category if being updated
+  if (updates.category) {
+    const normalizedCategory = updates.category.toLowerCase().trim();
+    if (!allowedCategories.includes(normalizedCategory as AllowedCategory)) {
+      throw new ApiError(400, "Invalid category");
+    }
+    updates.category = normalizedCategory;
+  }
+
+  // Validate and parse tags if being updated
+  if (updates.tags) {
+    try {
+      const parsed = typeof updates.tags === "string" ? JSON.parse(updates.tags) : updates.tags;
+      if (Array.isArray(parsed)) {
+        updates.tags = parsed.map((t: string) => t.toLowerCase().trim());
+      } else {
+        throw new ApiError(400, "Tags must be an array");
+      }
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(400, "Invalid tags format");
+    }
+  }
+
+  // Remove fields that shouldn't be updated directly
+  delete updates._id;
+  delete updates.createdAt;
+
+  const template = await Template.findByIdAndUpdate(
+    id,
+    { ...updates },
+    { new: true, runValidators: true }
+  );
+
+  if (!template) {
+    throw new ApiError(404, "Template not found");
+  }
+
+  res.json(
+    new ApiResponse(200, template, "Template updated successfully")
+  );
+});
+
+// Optional: Get all categories
+export const getCategories = asyncHandler(async (req: Request, res: Response) => {
+  res.json(
+    new ApiResponse(200, allowedCategories, "Categories fetched successfully")
+  );
+});

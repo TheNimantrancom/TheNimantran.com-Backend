@@ -12,6 +12,8 @@ import adminRoutes from "./routes/admin/index.js"
 import allRouter from "./routes/index.js"
 import "./middlewares/passport.js"
 import { globalLimiter } from "./utils/limiter.js"
+import ApiError from "./utils/apiError.js"
+import ApiResponse from "./utils/apiResponse.js"
 
 const app: Application = express()
 
@@ -40,34 +42,94 @@ app.use(express.static("public"))
 
 app.use(cookieParser())
 app.use(passport.initialize())
-app.use(globalLimiter);
-app.use("/api", allRouter)
-app.use("/api", adminRoutes)
+app.use(globalLimiter)
 
-interface CustomError extends Error {
-  statusCode?: number
-  errors?: unknown[]
-}
+// Routes
+app.use("/api", allRouter)
+app.use("/api", adminRoutes) 
+app.get("/health", (req: Request, res: Response) => {
+  res.status(200).json(new ApiResponse(200, null, "Server is running"));
+});
+
+app.use("*", (req: Request, res: Response) => {
+  res.status(404).json(
+    new ApiResponse(404, null, `Cannot ${req.method} ${req.originalUrl}`)
+  );
+});
 
 app.use(
   (
-    err: CustomError,
+    err: Error | ApiError,
     req: Request,
     res: Response,
     next: NextFunction
   ): void => {
-    const statusCode: number = err.statusCode || 500
+    let statusCode = 500;
+    let message = "Internal Server Error";
+    let errors: unknown[] = [];
+    let stack: string | undefined = undefined;
+
+    if (err instanceof ApiError) {
+      statusCode = err.statusCode;
+      message = err.message;
+      errors = err.errors || [];
+    } 
+    else if ('statusCode' in err && typeof err.statusCode === 'number') {
+      statusCode = err.statusCode;
+      message = err.message;
+    }
+    else if (err.name === 'MongoServerError' && (err as any).code === 11000) {
+      statusCode = 409;
+      message = "Duplicate entry found";
+      const field = Object.keys((err as any).keyPattern)[0];
+      errors = [`${field} already exists`];
+    }
+    else if (err.name === 'ValidationError') {
+      statusCode = 400;
+      message = "Validation Error";
+      const validationErrors = (err as any).errors;
+      errors = Object.values(validationErrors).map((e: any) => e.message);
+    }
+    else if (err.name === 'CastError') {
+      statusCode = 400;
+      message = "Invalid ID format";
+      errors = [(err as any).stringValue];
+    }
+    else if (err.name === 'JsonWebTokenError') {
+      statusCode = 401;
+      message = "Invalid token";
+      errors = [err.message];
+    }
+    else if (err.name === 'TokenExpiredError') {
+      statusCode = 401;
+      message = "Token expired";
+      errors = [err.message];
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      stack = err.stack;
+      console.error(`[${new Date().toISOString()}] Error:`, {
+        statusCode,
+        message,
+        errors,
+        stack,
+        url: req.url,
+        method: req.method,
+        ip: req.ip
+      });
+    } else {
+      console.error(`[${new Date().toISOString()}] ${statusCode} - ${message} - ${req.method} ${req.url}`);
+    }
 
     res.status(statusCode).json({
       success: false,
-      message: err.message || "Internal Server Error",
-      errors: err.errors || [],
-      stack:
-        process.env.NODE_ENV === "development"
-          ? err.stack
-          : undefined,
-    })
+      statusCode,
+      message,
+      errors: errors.length > 0 ? errors : undefined,
+      data: null,
+      ...(stack && { stack }) 
+    });
   }
-)
+);
 
-export default app
+export default app;
