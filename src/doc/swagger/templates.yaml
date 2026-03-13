@@ -1,0 +1,176 @@
+openapi: 3.0.3
+
+tags:
+  - name: Templates
+    description: Template management APIs for invitation designs
+
+paths:
+
+  /templates:
+    post:
+      tags: [Templates]
+      summary: Create a new template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        201:
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateResponse'
+
+    get:
+      tags: [Templates]
+      summary: Get all templates
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            example: card
+        - name: search
+          in: query
+          schema:
+            type: string
+            example: wedding
+      responses:
+        200:
+          description: Templates fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplatesResponse'
+
+  /templates/{id}:
+    get:
+      tags: [Templates]
+      summary: Get template by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Template fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateResponse'
+
+    delete:
+      tags: [Templates]
+      summary: Delete template (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Template deleted successfully
+
+components:
+
+  schemas:
+
+    CreateTemplateRequest:
+      type: object
+      required:
+        - name
+        - category
+        - backgroundImage
+      properties:
+        name:
+          type: string
+          example: Wedding Invitation Template
+        category:
+          type: string
+          enum:
+            - packaging box
+            - t-shirt
+            - card
+            - flyer
+            - sticker
+            - other
+        backgroundImage:
+          type: string
+          example: https://cdn.thenimantran.com/templates/wedding-bg.png
+        width:
+          type: number
+          example: 800
+        height:
+          type: number
+          example: 600
+        dpi:
+          type: number
+          example: 300
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["wedding", "royal", "gold"]
+
+    Template:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        backgroundImage:
+          type: string
+        thumbnailImage:
+          type: string
+        width:
+          type: number
+        height:
+          type: number
+        dpi:
+          type: number
+        tags:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+
+    TemplateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Template'
+
+    TemplatesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            templates:
+              type: array
+              items:
+                $ref: '#/components/schemas/Template'
+            count:
+              type: integer

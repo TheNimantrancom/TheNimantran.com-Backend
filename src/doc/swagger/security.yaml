@@ -1,0 +1,12 @@
+securitySchemes:
+
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+    description: JWT Authorization header using Bearer scheme
+
+  CookieAuth:
+    type: apiKey
+    in: cookie
+    name: accessToken

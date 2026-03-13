@@ -1,0 +1,67 @@
+openapi: 3.0.3
+
+tags:
+  - name: Upload
+    description: File upload APIs (AWS S3 presigned URLs)
+
+paths:
+
+  /upload/presigned-url:
+    post:
+      tags: [Upload]
+      summary: Generate presigned S3 upload URL
+      description: Returns a temporary AWS S3 upload URL so the client can upload files directly to S3.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignedUploadRequest'
+      responses:
+        200:
+          description: Presigned URL generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUploadResponse'
+
+        400:
+          description: Missing fileName or fileType
+
+        500:
+          description: Failed to generate upload URL
+
+components:
+
+  schemas:
+
+    PresignedUploadRequest:
+      type: object
+      required:
+        - fileName
+        - fileType
+      properties:
+        fileName:
+          type: string
+          example: wedding-card.png
+        fileType:
+          type: string
+          example: image/png
+        folder:
+          type: string
+          example: templates
+
+    PresignedUploadResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          example: https://s3.amazonaws.com/....
+        key:
+          type: string
+          example: uploads/uuid-file.png
+        viewUrl:
+          type: string
+          example: https://cdn.thenimantran.com/uploads/uuid-file.png

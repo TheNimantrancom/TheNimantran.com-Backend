@@ -1,0 +1,34 @@
+components:
+
+  schemas:
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        statusCode:
+          type: integer
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+        data:
+          type: object
+          nullable: true

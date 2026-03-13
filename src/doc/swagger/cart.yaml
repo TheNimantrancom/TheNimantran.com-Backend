@@ -1,0 +1,174 @@
+openapi: 3.0.3
+
+tags:
+  - name: Cart
+    description: Shopping cart management APIs
+
+paths:
+
+  /cart:
+    get:
+      tags: [Cart]
+      summary: Get current user's cart
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: Cart fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+
+    delete:
+      tags: [Cart]
+      summary: Clear entire cart
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: Cart cleared
+
+  /cart/add:
+    post:
+      tags: [Cart]
+      summary: Add product or design to cart
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToCartRequest'
+      responses:
+        200:
+          description: Item added to cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+
+  /cart/item/{itemId}:
+    patch:
+      tags: [Cart]
+      summary: Update cart item quantity
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCartItemRequest'
+      responses:
+        200:
+          description: Cart item updated
+
+    delete:
+      tags: [Cart]
+      summary: Remove item from cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Item removed from cart
+
+  /cart/sync:
+    post:
+      tags: [Cart]
+      summary: Sync cart prices with latest product prices
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: Cart prices updated if needed
+
+components:
+
+  schemas:
+
+    AddToCartRequest:
+      type: object
+      properties:
+        itemType:
+          type: string
+          enum: [product, design]
+        productId:
+          type: string
+        designId:
+          type: string
+        quantity:
+          type: integer
+        specifications:
+          type: object
+
+    UpdateCartItemRequest:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          type: integer
+
+    CartItem:
+      type: object
+      properties:
+        _id:
+          type: string
+        itemType:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        previewImage:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        discountPerUnit:
+          type: number
+        totalPrice:
+          type: number
+        isWholesale:
+          type: boolean
+
+    Cart:
+      type: object
+      properties:
+        user:
+          type: string
+        itemCount:
+          type: integer
+        subtotal:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+
+    CartResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Cart'

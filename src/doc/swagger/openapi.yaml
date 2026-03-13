@@ -1,0 +1,79 @@
+openapi: 3.0.3
+
+info:
+  title: TheNimantran.com API
+  version: 1.0.0
+  description: Official API documentation for TheNimantran platform
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local Development Server
+  - url: https://api.thenimantran.com/api
+    description: Production Server
+
+tags:
+  - name: Auth
+    description: Authentication APIs
+
+paths: {}
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        statusCode:
+          type: integer
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+        data:
+          type: object
+          nullable: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        isVerified:
+          type: boolean
+        isEmailVerified:
+          type: boolean

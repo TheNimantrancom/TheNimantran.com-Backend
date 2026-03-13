@@ -7,13 +7,16 @@ import express, {
 import cors, { CorsOptions } from "cors"
 import cookieParser from "cookie-parser"
 import passport from "passport"
-
+import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
 import adminRoutes from "./routes/admin/index.js"
 import allRouter from "./routes/index.js"
 import "./middlewares/passport.js"
 import { globalLimiter } from "./utils/limiter.js"
 import ApiError from "./utils/apiError.js"
 import ApiResponse from "./utils/apiResponse.js"
+import path from "path"
+import { fileURLToPath } from "url";
 
 const app: Application = express()
 
@@ -30,7 +33,8 @@ const corsOptions: CorsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 }
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 app.set("trust proxy", 1)
 
 app.use(cors(corsOptions))
@@ -50,12 +54,29 @@ app.use("/api", adminRoutes)
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, null, "Server is running"));
 });
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.3",
+    info: {
+      title: "TheNimantran.com API",
+      version: "1.0.0",
+      description: "TheNimantran.com API Documentation",
+    },
+    servers: [
+      { url: "http://localhost:8000/api", description: "Local server" },
+      { url: `${process.env.BACKEND_URL}/api`, description: "Production server" },
+    ]
+  },
+  apis: [path.join(__dirname, "doc", "swagger", "*.yaml")]
+}
+const swaggerSpec = swaggerJSDoc(swaggerOptions)
 
-app.use("*", (req: Request, res: Response) => {
-  res.status(404).json(
-    new ApiResponse(404, null, `Cannot ${req.method} ${req.originalUrl}`)
-  );
-});
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+// app.use("*", (req: Request, res: Response) => {
+//   res.status(404).json(
+//     new ApiResponse(404, null, `Cannot ${req.method} ${req.originalUrl}`)
+//   );
+// });
 
 app.use(
   (

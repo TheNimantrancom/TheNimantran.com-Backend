@@ -1,0 +1,175 @@
+openapi: 3.0.3
+
+tags:
+  - name: WarehouseAuth
+    description: Warehouse authentication APIs
+
+paths:
+
+  /warehouse/auth/register:
+    post:
+      tags: [WarehouseAuth]
+      summary: Register a warehouse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WarehouseRegisterRequest'
+      responses:
+        201:
+          description: Warehouse created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarehouseResponse'
+
+  /warehouse/auth/login:
+    post:
+      tags: [WarehouseAuth]
+      summary: Warehouse login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WarehouseLoginRequest'
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarehouseLoginResponse'
+
+  /warehouse/auth/logout:
+    post:
+      tags: [WarehouseAuth]
+      summary: Warehouse logout
+      responses:
+        200:
+          description: Logged out successfully
+
+  /warehouse/auth/profile:
+    get:
+      tags: [WarehouseAuth]
+      summary: Get warehouse profile
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: Warehouse profile fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarehouseResponse'
+
+components:
+
+  schemas:
+
+    WarehouseRegisterRequest:
+      type: object
+      required:
+        - name
+        - city
+        - address
+        - lat
+        - lng
+        - contactEmail
+        - password
+      properties:
+        name:
+          type: string
+          example: Delhi Central Warehouse
+        city:
+          type: string
+          example: Delhi
+        address:
+          type: string
+          example: Sector 22 Warehouse Complex
+        lat:
+          type: number
+          example: 28.6139
+        lng:
+          type: number
+          example: 77.2090
+        deliveryRadius:
+          type: number
+          example: 10000
+        managerName:
+          type: string
+          example: Rahul Sharma
+        contactEmail:
+          type: string
+          example: warehouse@thenimantran.com
+        contactPhone:
+          type: string
+          example: "9876543210"
+        password:
+          type: string
+          example: StrongPassword123
+
+    WarehouseLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: warehouse@thenimantran.com
+        password:
+          type: string
+          example: StrongPassword123
+
+    Warehouse:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        managerName:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        deliveryRadius:
+          type: number
+        isActive:
+          type: boolean
+
+    WarehouseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Warehouse'
+
+    WarehouseLoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            warehouse:
+              $ref: '#/components/schemas/Warehouse'
+            token:
+              type: string

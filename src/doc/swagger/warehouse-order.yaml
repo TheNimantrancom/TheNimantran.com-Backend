@@ -1,0 +1,160 @@
+openapi: 3.0.3
+
+tags:
+  - name: WarehouseOrders
+    description: Warehouse order processing APIs
+
+paths:
+
+  /warehouse/orders/{orderId}/accept:
+    put:
+      tags: [WarehouseOrders]
+      summary: Accept an order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Order accepted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarehouseOrderResponse'
+
+  /warehouse/orders/{orderId}/reject:
+    put:
+      tags: [WarehouseOrders]
+      summary: Reject an order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectOrderRequest'
+      responses:
+        200:
+          description: Order rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarehouseOrderResponse'
+
+  /warehouse/orders/{warehouseId}:
+    get:
+      tags: [WarehouseOrders]
+      summary: Get orders assigned to a warehouse
+      parameters:
+        - name: warehouseId
+          in: path
+          required: true
+          schema:
+            type: string
+
+        - name: status
+          in: query
+          schema:
+            type: string
+            example: pending
+
+        - name: page
+          in: query
+          schema:
+            type: integer
+            example: 1
+
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 20
+
+      responses:
+        200:
+          description: Warehouse orders fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarehouseOrdersResponse'
+
+components:
+
+  schemas:
+
+    RejectOrderRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          example: Warehouse capacity full
+
+    WarehouseOrder:
+      type: object
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+        finalAmount:
+          type: number
+        createdAt:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              quantity:
+                type: integer
+              unitPrice:
+                type: number
+
+    WarehouseOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/WarehouseOrder'
+
+    WarehouseOrdersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: '#/components/schemas/WarehouseOrder'
+            pagination:
+              type: object
+              properties:
+                total:
+                  type: integer
+                page:
+                  type: integer
+                limit:
+                  type: integer
+                pages:
+                  type: integer

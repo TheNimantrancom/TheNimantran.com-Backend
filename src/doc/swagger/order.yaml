@@ -1,0 +1,238 @@
+openapi: 3.0.3
+
+tags:
+  - name: Orders
+    description: Order management and checkout APIs
+
+paths:
+
+  /orders:
+    post:
+      tags: [Orders]
+      summary: Create order from cart
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        201:
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+
+    get:
+      tags: [Orders]
+      summary: Get user orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Orders fetched
+
+  /orders/{orderId}:
+    get:
+      tags: [Orders]
+      summary: Get single order
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Order fetched successfully
+
+  /orders/{orderId}/cancel:
+    put:
+      tags: [Orders]
+      summary: Cancel order
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Order cancelled successfully
+
+  /orders/{orderId}/razorpay/create:
+    post:
+      tags: [Orders]
+      summary: Create Razorpay payment order
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Razorpay order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RazorpayCreateResponse'
+
+  /orders/{orderId}/razorpay/verify:
+    post:
+      tags: [Orders]
+      summary: Verify Razorpay payment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RazorpayVerifyRequest'
+      responses:
+        200:
+          description: Payment verified successfully
+
+components:
+
+  schemas:
+
+    CreateOrderRequest:
+      type: object
+      required:
+        - paymentMethod
+        - shippingAddress
+      properties:
+        paymentMethod:
+          type: string
+          enum: [cod, online, wallet]
+        shippingAddress:
+          type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            line1:
+              type: string
+            line2:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            pincode:
+              type: string
+
+    OrderItem:
+      type: object
+      properties:
+        itemType:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        previewImage:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        discountPerUnit:
+          type: number
+        totalPrice:
+          type: number
+
+    Order:
+      type: object
+      properties:
+        orderId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        subtotal:
+          type: number
+        discount:
+          type: number
+        tax:
+          type: number
+        shippingFee:
+          type: number
+        finalAmount:
+          type: number
+        status:
+          type: string
+        paymentMethod:
+          type: string
+        paymentStatus:
+          type: string
+
+    OrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Order'
+
+    RazorpayCreateResponse:
+      type: object
+      properties:
+        razorpayOrderId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        keyId:
+          type: string
+
+    RazorpayVerifyRequest:
+      type: object
+      required:
+        - razorpay_order_id
+        - razorpay_payment_id
+        - razorpay_signature
+      properties:
+        razorpay_order_id:
+          type: string
+        razorpay_payment_id:
+          type: string
+        razorpay_signature:
+          type: string

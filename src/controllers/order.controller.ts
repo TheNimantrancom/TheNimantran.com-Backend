@@ -18,9 +18,7 @@ import { findNearestWarehouse, findNearestWarehouses } from "../services/warehou
 import { getIO } from "../index.js"
 import {razorpay} from "../utils/razorpay.js"
 import crypto from "crypto"
-/* ================================================================== */
-/*  Constants                                                          */
-/* ================================================================== */
+
 
 const GST_RATE = 0.18
 const WHOLESALE_FREE_SHIPPING_THRESHOLD = 2000

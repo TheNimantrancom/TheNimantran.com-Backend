@@ -1,0 +1,156 @@
+openapi: 3.0.3
+
+tags:
+  - name: Location
+    description: Location and delivery service APIs
+
+paths:
+
+  /location/update:
+    post:
+      tags: [Location]
+      summary: Update user location
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+      responses:
+        200:
+          description: Location updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationResponse'
+
+  /location/check-service:
+    get:
+      tags: [Location]
+      summary: Check if delivery service is available
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 28.6139
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 77.2090
+      responses:
+        200:
+          description: Service availability result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceAvailabilityResponse'
+
+  /location/nearest-warehouse:
+    get:
+      tags: [Location]
+      summary: Get nearest warehouse
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 28.6139
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 77.2090
+      responses:
+        200:
+          description: Nearest warehouse fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NearestWarehouseResponse'
+
+components:
+
+  schemas:
+
+    UpdateLocationRequest:
+      type: object
+      required:
+        - lat
+        - lng
+      properties:
+        lat:
+          type: number
+          example: 28.6139
+        lng:
+          type: number
+          example: 77.2090
+
+    LocationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+
+    ServiceAvailabilityResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            serviceAvailable:
+              type: boolean
+            city:
+              type: string
+            zone:
+              type: string
+
+    NearestWarehouseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            serviceAvailable:
+              type: boolean
+            warehouse:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                city:
+                  type: string
+                distance:
+                  type: number

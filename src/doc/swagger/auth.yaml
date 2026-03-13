@@ -1,0 +1,280 @@
+openapi: 3.0.3
+
+tags:
+  - name: Auth
+    description: Authentication and user account APIs
+
+paths:
+
+  /auth/registerUser:
+    post:
+      tags: [Auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /auth/loginUser:
+    post:
+      tags: [Auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /auth/logoutUser:
+    post:
+      tags: [Auth]
+      summary: Logout user
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: User logged out
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current logged in user
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /auth/updateProfile:
+    put:
+      tags: [Auth]
+      summary: Update user profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        200:
+          description: Profile updated
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        200:
+          description: Password changed successfully
+
+  /token/refreshAccessToken:
+    post:
+      tags: [Auth]
+      summary: Refresh JWT tokens
+      responses:
+        200:
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /auth/getLoginOtp/{purpose}:
+    post:
+      tags: [Auth]
+      summary: Send OTP
+      parameters:
+        - name: purpose
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpRequest'
+      responses:
+        200:
+          description: OTP sent successfully
+
+  /auth/checkOtp/{purpose}:
+    post:
+      tags: [Auth]
+      summary: Verify OTP
+      parameters:
+        - name: purpose
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpVerifyRequest'
+      responses:
+        200:
+          description: OTP verified successfully
+
+  /auth/sendOtp/{email}/{purpose}:
+    get:
+      tags: [Auth]
+      summary: Send OTP via email
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: purpose
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OTP sent
+
+  /auth/google:
+    get:
+      tags: [Auth]
+      summary: Google OAuth login
+      responses:
+        302:
+          description: Redirect to Google authentication
+
+  /auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Google OAuth callback
+      responses:
+        302:
+          description: Redirect to frontend
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    RegisterRequest:
+      type: object
+      required: [email, password, phone]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    ResetPasswordRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        otp:
+          type: string
+
+    OtpRequest:
+      type: object
+      properties:
+        email:
+          type: string
+
+    OtpVerifyRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        otp:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        isEmailVerified:
+          type: boolean
+
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/User'

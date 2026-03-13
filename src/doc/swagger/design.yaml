@@ -1,0 +1,187 @@
+openapi: 3.0.3
+
+tags:
+  - name: Designs
+    description: User design management APIs
+
+paths:
+
+  /design:
+    post:
+      tags: [Designs]
+      summary: Create or update a design
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveDesignRequest'
+      responses:
+        201:
+          description: Design saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignResponse'
+
+  /design/{id}:
+    get:
+      tags: [Designs]
+      summary: Get a design by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Design fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignResponse'
+
+    delete:
+      tags: [Designs]
+      summary: Delete a design
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Design deleted successfully
+
+  /design/user:
+    get:
+      tags: [Designs]
+      summary: Get all designs for the current user
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: User designs fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDesignsResponse'
+
+  /design/recent:
+    get:
+      tags: [Designs]
+      summary: Get recent designs for user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 5
+      responses:
+        200:
+          description: Recent designs fetched
+
+  /design/{id}/duplicate:
+    post:
+      tags: [Designs]
+      summary: Duplicate a design
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: Design duplicated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignResponse'
+
+components:
+
+  schemas:
+
+    SaveDesignRequest:
+      type: object
+      required:
+        - templateId
+        - canvasJSON
+      properties:
+        templateId:
+          type: string
+          example: 66f2ab12e9b41a2d91
+        name:
+          type: string
+          example: Wedding Card Design
+        canvasJSON:
+          type: object
+          description: FabricJS canvas JSON
+        previewImage:
+          type: string
+          example: https://cdn.thenimantran.com/design-preview.png
+        designId:
+          type: string
+          description: If provided, updates existing design
+
+    Design:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        templateId:
+          type: string
+        previewImage:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    DesignResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Design'
+
+    UserDesignsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            designs:
+              type: array
+              items:
+                $ref: '#/components/schemas/Design'
+            count:
+              type: integer
