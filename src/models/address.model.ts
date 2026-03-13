@@ -5,7 +5,7 @@ import mongoose, {
   Types,
 } from "mongoose"
 
-import {IAddress, IAddressInfo} from "../types/models/address.types.js"
+import { IAddress, IAddressInfo } from "../types/models/address.types.js"
 
 
 
@@ -22,6 +22,8 @@ const addressInfoSchema = new Schema<IAddressInfo>({
     trim: true,
     match: [/^[6-9]\d{9}$/, "Invalid phone number format"],
   },
+  lat: { type: Number },
+  lang: { type: Number },
   alternatePhone: {
     type: String,
     trim: true,

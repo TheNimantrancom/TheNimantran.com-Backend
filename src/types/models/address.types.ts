@@ -12,6 +12,8 @@ export interface IAddressInfo {
   city: string
   roadAreaColony: string
   pincode: string
+  lat:number
+  lang:number
   landmark?: string
   typeOfAddress: "home" | "work" | "other"
 }

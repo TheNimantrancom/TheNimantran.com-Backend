@@ -22,12 +22,14 @@ export const addAddress = asyncHandler(
       roadAreaColony,
       pincode,
       landmark,
+      lat,
+      lang,
       typeOfAddress,
     } = req.body
 
     const userId = req.user._id
 
-    if (!name || !phone || !state || !city || !roadAreaColony || !pincode) {
+    if (!name || !phone || !state || !city || !roadAreaColony || !pincode || !lat || !lang) {
       throw new ApiError(
         400,
         "All required address fields must be provided"
@@ -45,6 +47,8 @@ export const addAddress = asyncHandler(
       roadAreaColony,
       pincode,
       landmark,
+      lat,
+      lang,
       typeOfAddress,
     }
 
@@ -134,6 +138,8 @@ export const updateAddress = asyncHandler(
       "roadAreaColony",
       "pincode",
       "landmark",
+      "lat",
+      "lang",
       "typeOfAddress",
     ]
 
@@ -230,12 +236,14 @@ export const addOrUpdateDefaultAddress =
         roadAreaColony,
         pincode,
         landmark,
+        lat,
+        lang,
         typeOfAddress,
       } = req.body
 
       const userId = req.user._id
 
-      if (!name || !phone || !state || !city || !roadAreaColony || !pincode) {
+      if (!name || !phone || !state || !city || !roadAreaColony || !pincode || !lat || !lang) {
         throw new ApiError(
           400,
           "All required address fields must be provided"
@@ -251,6 +259,8 @@ export const addOrUpdateDefaultAddress =
         roadAreaColony,
         pincode,
         landmark,
+        lat,
+        lang,
         typeOfAddress,
       }
 
