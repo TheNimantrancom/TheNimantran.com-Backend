@@ -67,7 +67,7 @@ const swaggerOptions = {
       { url: `${process.env.BACKEND_URL}/api`, description: "Production server" },
     ]
   },
-  apis: [path.join(__dirname, "doc", "swagger", "*.yaml")]
+apis: [path.join(__dirname, "../src/doc/swagger/*.yaml")]
 }
 const swaggerSpec = swaggerJSDoc(swaggerOptions)
 
