@@ -40,7 +40,7 @@ router.post("/auth/reset-password",resetPassword)
 router.post("/auth/loginUser", loginUser);
 router.post("/auth/getLoginOtp/:purpose", sendOTP);
 router.get("/auth/me", verifyJWT, getCurrentUser);
-router.post("/auth/logoutUser", verifyJWT, logoutUser);
+router.post("/auth/logoutUser", logoutUser);
 router.put("/auth/updateProfile", verifyJWT, updateProfile); 
 router.post("/auth/checkOtp/:purpose", checkOtp);
 router.get("/auth/sendOtp/:email/:purpose", sendOTP);
