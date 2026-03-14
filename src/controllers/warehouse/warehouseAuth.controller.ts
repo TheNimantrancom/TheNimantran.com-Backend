@@ -4,6 +4,7 @@ import asyncHandler from "../../utils/asyncHandler.js"
 import ApiError from "../../utils/apiError.js"
 import ApiResponse from "../../utils/apiResponse.js"
 import { Warehouse, IWarehouse } from "../../models/warehouse.model.js"
+import { options } from "../../middlewares/auth.middleware.js"
 
 
 
@@ -133,7 +134,7 @@ export const warehouseLogin = asyncHandler(
 
     return res
       .status(200)
-      .cookie("warehouseToken", token, cookieOptions)
+      .cookie("warehouseToken", token, options)
       .json(
         new ApiResponse(
           200,
