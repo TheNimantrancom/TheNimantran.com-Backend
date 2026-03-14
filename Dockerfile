@@ -26,6 +26,7 @@ RUN npm ci --omit=dev --no-audit --no-fund \
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/src/doc ./doc
 
 ENV NODE_ENV=production
 
