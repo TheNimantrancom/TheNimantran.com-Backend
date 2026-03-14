@@ -8,7 +8,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 // POST /api/designs - Save or update design
 export const saveDesign = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user?._id;
-  const { templateId, name, canvasJSON, previewImage, designId } = req.body;
+  const { templateId, name, canvasJSON, previewImage, designId ,width,height} = req.body;
 
   // Check authentication
   if (!userId) {
@@ -46,6 +46,8 @@ export const saveDesign = asyncHandler(async (req: Request, res: Response) => {
       { 
         name: name?.trim() || 'Untitled Design', 
         canvasJSON, 
+        width,
+        height,
         previewImage: previewImage || existingDesign.previewImage, 
         status: 'saved', 
         updatedAt: new Date() 

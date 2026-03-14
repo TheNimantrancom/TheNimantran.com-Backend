@@ -9,6 +9,8 @@ export interface ITemplate extends Document {
   height: number;
   dpi?: number;
   tags?: string[];
+  bleed:number;
+  safeMargin:number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +31,8 @@ category: {
     dpi: { type: Number, default: 300 },
     tags: [{ type: String }],
     isActive: { type: Boolean, default: true },
+    bleed: { type: Number, default: 3 },
+safeMargin: { type: Number, default: 5 }
   },
   { timestamps: true }
 );

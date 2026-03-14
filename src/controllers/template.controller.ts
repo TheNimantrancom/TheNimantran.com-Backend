@@ -16,7 +16,7 @@ const allowedCategories = [
 type AllowedCategory = typeof allowedCategories[number];
 
 export const createTemplate = asyncHandler(async (req: Request, res: Response) => {
-  const { name, category, width, height, dpi, tags, backgroundImage } = req.body;
+  const { name, category, width, height, dpi, tags, backgroundImage,bleed,safeMargin } = req.body;
 
   // Validation
   if (!name?.trim()) {
@@ -55,6 +55,8 @@ export const createTemplate = asyncHandler(async (req: Request, res: Response) =
   // Create template
   const template = await Template.create({
     name: name.trim(),
+    bleed:Number(bleed) || 3,
+    safeMargin:Number(safeMargin) ||5,
     category: normalizedCategory,
     backgroundImage: backgroundImage.trim(),
     thumbnailImage: backgroundImage.trim(),
