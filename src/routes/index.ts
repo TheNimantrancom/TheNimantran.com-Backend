@@ -20,7 +20,7 @@ router.use("/user", normalRoutes);
 router.use("/check",healthRoutes);
 // router.use("/payments",paymentRoutes)
 router.use("/templates",templateRoutes)
-router.use("commercial-prints",commercialPrintRoutes)
+router.use("/commercial-prints",commercialPrintRoutes)
 router.use("/design",designRoutes);
 router.use("/ai",aiRoutes)
 router.use("/cart", cartRoutes);
