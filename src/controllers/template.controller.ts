@@ -94,7 +94,7 @@ export const getTemplates = asyncHandler(async (req: Request, res: Response) => 
 export const getTemplateById = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const template = await Template.findOne({ _id: id, isActive: true });
+  const template = await Template.findOne({ _id: id});
 
   if (!template) {
     throw new ApiError(404, "Template not found");
