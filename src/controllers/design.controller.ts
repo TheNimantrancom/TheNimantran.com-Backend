@@ -46,8 +46,8 @@ export const saveDesign = asyncHandler(async (req: Request, res: Response) => {
       { 
         name: name?.trim() || 'Untitled Design', 
         canvasJSON, 
-        width,
-        height,
+        width:Number(width),
+        height:Number(height),
         previewImage: previewImage || existingDesign.previewImage, 
         status: 'saved', 
         updatedAt: new Date() 
@@ -59,6 +59,8 @@ export const saveDesign = asyncHandler(async (req: Request, res: Response) => {
     design = await Design.create({
       templateId,
       userId,
+      width:Number(width),
+      height:Number(height),
       name: name?.trim() || 'Untitled Design',
       canvasJSON,
       previewImage: previewImage || null,
